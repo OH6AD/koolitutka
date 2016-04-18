@@ -1,0 +1,38 @@
+#!/bin/sh -eu
+# Irssiproxy credentials and temp file for storing previous ham list
+HOST=localhost
+PORT=5555
+PASS=salainen
+CHAN='#oh6ad'
+HAMLIST=~/hams.txt
+
+tmpnewraw=`mktemp`
+tmpnew=`mktemp`
+tmpold=`mktemp`
+curl -Ssf 'https://eservices.viestintavirasto.fi/Licensesservices/Forms/AmateurLicenses.aspx' -F __EVENTTARGET= -F ButtonDownload= -o "$tmpnewraw"
+grep VOIMAS <"$tmpnewraw" | cut -f 1 | sort >"$tmpnew"
+grep VOIMAS <"$HAMLIST" | cut -f 1 | sort >"$tmpold"
+comm -3 --output-delimiter=, "$tmpold" "$tmpnew" | {
+    # Logon to Irssiproxy
+    echo "PASS $PASS"
+    echo USER
+    echo NICK
+
+    # Populate call list
+    while IFS=, read -r cs_dead cs_new; do
+	if test "$cs_new"; then
+	    new="${new-Uudet koolit: }${new+, }$cs_new"
+	else
+	    dead="${dead-Kylmät kolvit: }${dead+, }$cs_dead"
+	fi
+    done
+
+    # Echo and quit proxy
+    test "${dead+ }" && echo "PRIVMSG #testikannu :$dead"
+    test "${new+ }" && echo "PRIVMSG #testikannu :$new"
+    echo QUIT
+} | nc "$HOST" "$PORT" >/dev/null
+
+# Replace old list with new and clean temp files
+mv "$tmpnewraw" "$HAMLIST"
+rm "$tmpold" "$tmpnew"
