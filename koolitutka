@@ -28,8 +28,8 @@ comm -3 --output-delimiter=, "$tmpold" "$tmpnew" | {
     done
 
     # Echo and quit proxy
-    test "${dead+ }" && echo "PRIVMSG #testikannu :$dead"
-    test "${new+ }" && echo "PRIVMSG #testikannu :$new"
+    test "${dead+ }" && echo "PRIVMSG $CHAN :$dead"
+    test "${new+ }" && echo "PRIVMSG $CHAN :$new"
     echo QUIT
 } | nc "$HOST" "$PORT" >/dev/null
 
