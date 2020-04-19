@@ -88,7 +88,13 @@ function call_list($list, $intro, $spell) {
     }
 }
 
-$changes = compare_active('../koolit', 'origin/master^^', 'origin/master');
+$repo = "../koolit";
+$branch = "origin/master";
+
+// Git operations. Fetch and find 
+git_fetch("$repo");
+$old_commit = date_to_commit("../koolit", $branch, "yesterday");
+$changes = compare_active('../koolit', $old_commit, $branch);
 
 $new_intro = ["Ei uusia asemalupia", "Eilen Traficom myönsi yhden uuden asemaluvan: ", "Eilen Traficom myönsi seuraavat uudet asemaluvat: "];
 $old_intro = ["Ei poistuneita kutsuja", "Yksi kutsu poistui: ", "Seuraavat kutsut poistuivat: "];

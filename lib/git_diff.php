@@ -4,11 +4,38 @@
  * Functions for handling git differences
  */
 
+// Fetch from origin.
+function git_fetch($repo) {
+    $fds = [
+        1 => STDERR, // pass stdout to stderr
+        2 => STDERR, // stderr passthrough
+    ];
+
+    $proc = proc_open("git fetch", $fds, $pipes, $repo);
+    proc_close($proc);
+}
+
+// Get commit after given date or FALSE if no commits have occurred after given date.
+function date_to_commit($repo, $branch, $date) {
+    $fds = [
+        1 => ["pipe", "w"], // Get data via pipe
+        2 => STDERR, // stderr passthrough
+    ];
+
+    $safe_date = escapeshellarg($date);
+    $safe_branch = escapeshellarg($branch);
+    $proc = proc_open("git log --reverse --since=$safe_date --format=%H $safe_branch", $fds, $pipes, $repo);
+    $commit = fgets($pipes[1]);
+    pclose($pipes[1]);
+    proc_close($proc);
+    return $commit;
+}    
+
 // Get handle to koolit list
 function open_koolit($repo, $version) {
     $fds = [
         1 => ["pipe", "w"], // Get data via pipe
-        2 => STDERR // stderr passthrough
+        2 => STDERR, // stderr passthrough
     ];
 
     $safe_version = escapeshellarg($version);
@@ -36,6 +63,9 @@ function compare_active($repo, $old_version, $new_version) {
         "removed" => [],
     ];
 
+    // If source is not given, return empty set
+    if ($old_version === FALSE) return (object)$out;
+    
     // Open handles
     $old = open_koolit($repo, $old_version);
     $new = open_koolit($repo, $new_version);
