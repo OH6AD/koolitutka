@@ -1,9 +1,7 @@
 #!/bin/sh -eu
-# Irssiproxy credentials and temp file for storing previous ham list
-HOST=localhost
-PORT=5555
-PASS=salainen
-CHAN='#oh6ad'
+# Matrix credentials and temp file for storing previous ham list
+TOKEN="`cat ~/token.txt`"
+ROOM='!BLYeigonHHIgGStfrT%3Airc.snt.utwente.nl'
 HAMLIST=~/hams.txt
 
 tmpnewraw=`mktemp`
@@ -13,25 +11,20 @@ curl -Ssf 'https://eservices.viestintavirasto.fi/Licensesservices/Forms/AmateurL
 grep VOIMAS <"$tmpnewraw" | cut -f 1 | sort >"$tmpnew"
 grep VOIMAS <"$HAMLIST" | cut -f 1 | sort >"$tmpold"
 comm -3 --output-delimiter=, "$tmpold" "$tmpnew" | {
-    # Logon to Irssiproxy
-    echo "PASS $PASS"
-    echo USER
-    echo NICK
-
     # Populate call list
     while IFS=, read -r cs_dead cs_new; do
 	if test "$cs_new"; then
-	    new="${new-Uudet koolit: }${new+, }$cs_new"
+	    item="+$cs_new"
 	else
-	    dead="${dead-Kylmät kolvit: }${dead+, }$cs_dead"
+	    item="-$cs_dead"
 	fi
+	msg="${msg-Traficomista huomenta! }${msg+ }$item"
     done
 
-    # Echo and quit proxy
-    test "${dead+ }" && echo "PRIVMSG $CHAN :$dead"
-    test "${new+ }" && echo "PRIVMSG $CHAN :$new"
-    echo QUIT
-} | nc "$HOST" "$PORT" >/dev/null
+    if test "${item+ }"; then
+	echo -n "$msg" | jq -Rs '{"body":.,"msgtype": "m.notice"}' | curl -X PUT --header 'Content-Type: application/json' --header 'Accept: application/json' -d @- "https://jkl.hacklab.fi:8448/_matrix/client/r0/rooms/$ROOM/send/m.room.message/`date +%s`?access_token=$TOKEN"
+    fi
+}
 
 # Replace old list with new and clean temp files
 mv "$tmpnewraw" "$HAMLIST"
