@@ -2,14 +2,30 @@
 # Matrix credentials and temp file for storing previous ham list
 TOKEN="`cat ~/token.txt`"
 ROOM='!BLYeigonHHIgGStfrT%3Airc.snt.utwente.nl'
-HAMLIST=~/hams.txt
+KOOLIT_DIR=/PATH/TO/koolit
 
-tmpnewraw=`mktemp`
+get_koolit () {
+    git cat-file -p "$1:oh-callsigns.tsv" | LC_ALL=C sed -rne 's/^([^\t]*)\tVOIMAS.*/\1/p' | LC_ALL=C sort >"$2"
+}
+
+# Operate on koolit repository.
+export GIT_DIR="$KOOLIT_DIR/.git"
+git fetch
+
+# Check if we have the tag yet
+if ! LAST_TIME=`git rev-parse --verify -q tags/koolitutka`; then
+    git tag koolitutka origin/master
+    echo "Running the first time. Nothing to report. Added 'koolitutka' tag to origin/master."
+    exit 0
+fi
+
+# Get filtered callsigns of last and this time
 tmpnew=`mktemp`
 tmpold=`mktemp`
-curl -Ssf 'https://eservices.viestintavirasto.fi/Licensesservices/Forms/AmateurLicenses.aspx' -F __EVENTTARGET= -F ButtonDownload= -o "$tmpnewraw"
-grep VOIMAS <"$tmpnewraw" | cut -f 1 | sort >"$tmpnew"
-grep VOIMAS <"$HAMLIST" | cut -f 1 | sort >"$tmpold"
+get_koolit koolitutka $tmpold
+get_koolit origin/master $tmpnew
+
+# Compare and craft a message
 comm -3 --output-delimiter=, "$tmpold" "$tmpnew" | {
     # Populate call list
     while IFS=, read -r cs_dead cs_new; do
@@ -26,6 +42,8 @@ comm -3 --output-delimiter=, "$tmpold" "$tmpnew" | {
     fi
 }
 
-# Replace old list with new and clean temp files
-mv "$tmpnewraw" "$HAMLIST"
+# Update tag
+git tag -f koolitutka origin/master
+
+# Clean temp files
 rm "$tmpold" "$tmpnew"
