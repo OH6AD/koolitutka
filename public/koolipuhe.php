@@ -2,6 +2,11 @@
 
 require_once(__DIR__.'/../lib/git_diff.php');
 
+// Make it work if STDERR is not available
+if (!defined('STDERR')) {
+    define('STDERR', fopen('/dev/null', 'w'));
+}
+
 $config = parse_ini_file(__DIR__.'/../config.ini');
 if ($config === FALSE) {
     http_response_code(500);
