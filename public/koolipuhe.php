@@ -2,6 +2,14 @@
 
 require_once(__DIR__.'/../lib/git_diff.php');
 
+$config = parse_ini_file(__DIR__.'/../config.ini');
+if ($config === FALSE) {
+    http_response_code(500);
+    print("No configuration file found\n");
+    exit(1);
+}
+$config = (object)$config;
+
 // Make sure string comparison are stable
 putenv("LC_ALL=C");
 
@@ -18,7 +26,7 @@ $alphabet = [
     'D' => "Daavid",
     'E' => "Eemeli",
     'F' => "Faarao",
-    'G' => "Gideon",
+    'G' => "Giideon",
     'H' => "Heikki",
     'I' => "Iivari",
     'J' => "Jussi",
@@ -43,6 +51,7 @@ $alphabet = [
     'Ö' => "öljy",
     '/' => "kautta",
     '*' => "tähti",
+    '0' => "nolla", // Avoiding extra pause before 0 by making it text
 ];
 
 
@@ -88,15 +97,13 @@ function call_list($list, $intro, $spell) {
     }
 }
 
-$repo = "../koolit";
-$branch = "origin/master";
+// Git operations. Fetch and find
+$since = $_GET['since'] ?? $argv[2] ?? $config->since_default;
+git_fetch($config->repo);
+$old_commit = date_to_commit($config->repo, $config->branch, $since);
+$changes = compare_active($config->repo, $old_commit, $config->branch);
 
-// Git operations. Fetch and find 
-git_fetch("$repo");
-$old_commit = date_to_commit("../koolit", $branch, "yesterday");
-$changes = compare_active('../koolit', $old_commit, $branch);
-
-$new_intro = ["Ei uusia asemalupia", "Eilen Traficom myönsi yhden uuden asemaluvan: ", "Eilen Traficom myönsi seuraavat uudet asemaluvat: "];
+$new_intro = ["Ei uusia asemalupia", "Traficom on myöntänyt yhden uuden asemaluvan: ", "Traficom on myöntänyt seuraavat uudet asemaluvat: "];
 $old_intro = ["Ei poistuneita kutsuja", "Yksi kutsu poistui: ", "Seuraavat kutsut poistuivat: "];
 
 // Select output format based on GET parameters or positional parameter.

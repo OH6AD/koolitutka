@@ -1,7 +1,7 @@
 # Koolitutka
 Services based on changes to Finnish radio amateur callsign database.
 
-## Ham callsign to Matrix room reporter
+## Ham callsign to Matrix room
 
 Used for getting ham radio callsigns to an IRC channel, by default
 #oh6ad on IRCNet. See [source](koolitutka) for details.
@@ -19,3 +19,25 @@ Usage:
 4. Run `koolitutka` periodically from systemd timer or crontab
 
 The callsign repository is updated once a day at 06:04 on Europe/Helsinki.
+
+## Ham callsign to speech
+
+May be used to speak out new callsigns as a bulletin on a repeater. Or
+just for fun.
+
+Requirements:
+
+- `git php festival festvox-suopuhe-mv opusenc`
+
+Usage:
+
+1. Clone git repository https://github.com/OH6AD/koolit/ to somewhere
+2. Copy `config.example.ini` to `config.in`
+3. Edit `config.ini` and set repository path correctly
+4. Expose `public/` directory on your HTTP server
+
+It can be also run via command-line and play the audio locally:
+
+```sh
+php public/koolipuhe.php opus 2020-04-10 | vlc fd://0 vlc://quit
+```

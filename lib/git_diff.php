@@ -25,7 +25,7 @@ function date_to_commit($repo, $branch, $date) {
     $safe_date = escapeshellarg($date);
     $safe_branch = escapeshellarg($branch);
     $proc = proc_open("git log --reverse --since=$safe_date --format=%H $safe_branch", $fds, $pipes, $repo);
-    $commit = fgets($pipes[1]);
+    $commit = trim(fgets($pipes[1]));
     pclose($pipes[1]);
     proc_close($proc);
     return $commit;
