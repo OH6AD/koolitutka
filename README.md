@@ -6,6 +6,11 @@ Services based on changes to Finnish radio amateur callsign database.
 Used for getting ham radio callsigns to an IRC channel, by default
 #oh6ad on IRCNet. See [source](koolitutka) for details.
 
+Requirements:
+
+- `git jq curl`
+- [Matrix](https://matrix.org/) account
+
 Usage:
 
 1. Clone git repository https://github.com/OH6AD/koolit/ to somewhere
