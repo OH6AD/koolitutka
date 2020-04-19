@@ -1,12 +1,18 @@
 <?php
 
-putenv("GIT_DIR=../koolit/.git");
+// Make sure string comparison are stable
 putenv("LC_ALL=C");
-ini_set("auto_detect_line_endings", true);
 
 // Get handle to koolit list
-function open_koolit($version) {
-    return popen("git cat-file -p '$version:oh-callsigns.tsv' | sort", "r");
+function open_koolit($repo, $version) {
+    $fds = [
+        1 => ["pipe", "w"], // Get data via pipe
+        2 => STDERR // stderr passthrough
+    ];
+
+    $safe_version = escapeshellarg($version);
+    $proc = proc_open("git cat-file -p $safe_version:oh-callsigns.tsv | sort", $fds, $pipes, $repo);
+    return (object)["proc" => $proc, "pipe" => $pipes[1]];
 }
 
 // Read next active callsign from the handle
@@ -23,19 +29,19 @@ function get_next_active($pipe) {
 }
 
 // Comparison of two versions
-function compare_active($old_version, $new_version) {
+function compare_active($repo, $old_version, $new_version) {
     $out = [
         "added" => [],
         "removed" => [],
     ];
 
     // Open handles
-    $old_h = open_koolit($old_version);
-    $new_h = open_koolit($new_version);
+    $old = open_koolit($repo, $old_version);
+    $new = open_koolit($repo, $new_version);
 
     // Start finding diffences
-    $old_line = get_next_active($old_h);
-    $new_line = get_next_active($new_h);
+    $old_line = get_next_active($old->pipe);
+    $new_line = get_next_active($new->pipe);
 
     while (true) {
         // End condition: Both at EOF
@@ -48,23 +54,26 @@ function compare_active($old_version, $new_version) {
 
         if ($diff == 0) {
             // Both the same.
-            $old_line = get_next_active($old_h);
-            $new_line = get_next_active($new_h);
+            $old_line = get_next_active($old->pipe);
+            $new_line = get_next_active($new->pipe);
         } elseif ($diff < 0) {
             // Call sign removed
             $out['removed'][] =  $old_line;
-            $old_line = get_next_active($old_h);
+            $old_line = get_next_active($old->pipe);
         } else {
             // Call sign added
             $out['added'][] = $new_line;
-            $new_line = get_next_active($new_h);
+            $new_line = get_next_active($new->pipe);
         }
     }
 
-    pclose($old_h);
-    pclose($new_h);
+    pclose($old->pipe);
+    pclose($new->pipe);
+    proc_close($old->proc);
+    proc_close($new->proc);
+
     return (object)$out;
 }
 
-$out = compare_active('origin/master^^', 'origin/master');
+$out = compare_active('../koolit', 'origin/master^^', 'origin/master');
 var_dump($out);
