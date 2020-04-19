@@ -41,3 +41,9 @@ It can be also run via command-line and play the audio locally:
 ```sh
 php public/koolipuhe.php opus 2020-04-10 | vlc fd://0 vlc://quit
 ```
+
+Or just as text:
+
+```sh
+php public/koolipuhe.php text 2020-04-10
+```
