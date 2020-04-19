@@ -1,7 +1,8 @@
 #!/bin/sh -eu
 # Matrix credentials and temp file for storing previous ham list
-TOKEN="`cat ~/token.txt`"
+HS='https://jkl.hacklab.fi:8448'
 ROOM='!BLYeigonHHIgGStfrT%3Airc.snt.utwente.nl'
+TOKEN="`cat "$(dirname "$0")/token.txt"`"
 KOOLIT_DIR=/PATH/TO/koolit
 
 get_koolit () {
@@ -38,7 +39,7 @@ comm -3 --output-delimiter=, "$tmpold" "$tmpnew" | {
     done
 
     if test "${item+ }"; then
-	echo -n "$msg" | jq -Rs '{"body":.,"msgtype": "m.notice"}' | curl -X PUT --header 'Content-Type: application/json' --header 'Accept: application/json' -d @- "https://jkl.hacklab.fi:8448/_matrix/client/r0/rooms/$ROOM/send/m.room.message/`date +%s`?access_token=$TOKEN"
+	echo -n "$msg" | jq -Rs '{"body":.,"msgtype": "m.notice"}' | curl -X PUT --header 'Content-Type: application/json' --header 'Accept: application/json' -d @- "$HS/_matrix/client/r0/rooms/$ROOM/send/m.room.message/`date +%s`?access_token=$TOKEN"
     fi
 }
 
