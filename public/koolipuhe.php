@@ -76,8 +76,8 @@ function spell_call($input) {
 }
 
 // Spell list of calls in Finnish
-function spell_calls($list, $intro) {
-    $calls = array_map("spell_call", $list);
+function call_list($list, $intro, $spell) {
+    $calls = $spell ? array_map("spell_call", $list) : $list;
     switch (count($calls)) {
     case 0: return $intro[0];
     case 1: return $intro[1] . $calls[0];
@@ -92,7 +92,21 @@ $changes = compare_active('../koolit', 'origin/master^^', 'origin/master');
 
 $new_intro = ["Ei uusia asemalupia", "Eilen Traficom myönsi yhden uuden asemaluvan: ", "Eilen Traficom myönsi seuraavat uudet asemaluvat: "];
 $old_intro = ["Ei poistuneita kutsuja", "Yksi kutsu poistui: ", "Seuraavat kutsut poistuivat: "];
-$msg = "Hyvää huomenta! ". spell_calls($changes->added, $new_intro) . ". " . spell_calls($changes->removed, $old_intro) . ". ";
 
-var_dump($changes);
-print($msg."\n");
+// Select output format based on GET parameters or positional parameter.
+$format = $_GET['format'] ?? $argv[1] ?? 'text';
+
+$spelling = $format !== 'text';
+$msg = "Hyvää huomenta! ". call_list($changes->added, $new_intro, $spelling) . ". " . call_list($changes->removed, $old_intro, $spelling) . ". ";
+
+if ($format === 'opus') {
+    // Synthesize speech
+    header('Content-Type: audio/ogg; codecs=opus');
+    $tts = popen("text2wave -f 48000 -eval '(hy_fi_mv_diphone)' | opusenc --bitrate 40 - -", 'w');
+    fwrite($tts, iconv('UTF-8', 'ISO-8859-1', $msg));
+    pclose($tts);
+} else {
+    // Output as plain text
+    header('Content-Type: text/plain; charset=UTF-8');
+    print($msg."\n");
+}
