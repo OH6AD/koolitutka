@@ -99,7 +99,7 @@ function call_list($list, $intro, $spell) {
 
 // Git operations. Fetch and find
 $since = $_GET['since'] ?? $argv[2] ?? $config->since_default;
-git_fetch($config->repo);
+if ($config->fetch) git_fetch($config->repo);
 $old_commit = date_to_commit($config->repo, $config->branch, $since);
 $changes = compare_active($config->repo, $old_commit, $config->branch);
 
