@@ -126,9 +126,17 @@ $msg = "Hyvää huomenta! ". call_list($changes->added, $new_intro, $spelling) .
 if ($format === 'opus') {
     // Synthesize speech
     header('Content-Type: audio/ogg; codecs=opus');
-    $tts = popen("text2wave -f 48000 -eval '(hy_fi_mv_diphone)' | opusenc --bitrate 40 - -", 'w');
-    fwrite($tts, iconv('UTF-8', 'ISO-8859-1', $msg));
-    pclose($tts);
+
+    $fds = [
+        0 => ['pipe', 'r'],
+        1 => STDOUT, // Needs to be this to support php-fpm
+        2 => STDERR, // stderr passthrough
+    ];
+
+    $proc = proc_open("text2wave -f 48000 -eval '(hy_fi_mv_diphone)' | opusenc --bitrate 40 - -", $fds, $pipes);
+    fwrite($pipes[0], iconv('UTF-8', 'ISO-8859-1', $msg));
+    pclose($pipes[0]);
+    proc_close($proc);
 } else {
     // Output as plain text
     header('Content-Type: text/plain; charset=UTF-8');
