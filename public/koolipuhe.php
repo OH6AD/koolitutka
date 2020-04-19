@@ -61,11 +61,17 @@ function spell_prefix($input) {
     foreach ($prefixes as $k => $v) {
         // If matches, get that prefix
         if (strncmp($input, $k, strlen($k)) === 0) {
-            return [$v, substr($input, strlen($k))];
+            return (object)[
+                'prefix' => $v,
+                'rest'   => substr($input, strlen($k)),
+            ];
         }
     }
     // Otherwise return original
-    return ['',$input];
+    return (object)[
+        'prefix' => '',
+        'rest'   => $input,
+    ];
 }
 
 // Convert letters to radio alphabet
@@ -78,9 +84,9 @@ function spell_alphabet($input) {
 
 // Spell using quick prefix and rest of the string as radio alphabet
 function spell_call($input) {
-    [$prefix, $rest] = spell_prefix($input);
-    $out = spell_alphabet($rest);
-    if ($prefix !== '') array_unshift($out, $prefix);
+    $p = spell_prefix($input);
+    $out = spell_alphabet($p->rest);
+    if ($p->prefix !== '') array_unshift($out, $p->prefix);
     return(implode($out, ' '));
 }
 

@@ -27,7 +27,7 @@ just for fun.
 
 Requirements:
 
-- `git php festival festvox-suopuhe-mv opusenc`
+- `git php festival festvox-suopuhe-mv opus-tools`
 
 Usage:
 
