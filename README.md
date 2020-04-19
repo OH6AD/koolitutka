@@ -18,4 +18,4 @@ Usage:
 3. Edit `config.sh` and set repository path and Matrix credentials correctly
 4. Run `koolitutka` periodically from systemd timer or crontab
 
-The callsign repository is updated once a day at 06:04 EEST.
+The callsign repository is updated once a day at 06:04 on Europe/Helsinki.
