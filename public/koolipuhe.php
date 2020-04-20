@@ -10,6 +10,7 @@ if (!defined('STDERR')) {
 $config = parse_ini_file(__DIR__.'/../config.ini');
 if ($config === FALSE) {
     http_response_code(500);
+    header('Content-Type: text/plain; charset=UTF-8');
     print("No configuration file found\n");
     exit(1);
 }
@@ -128,22 +129,49 @@ $old_intro = ["Ei poistuneita kutsuja", "Yksi kutsu poistui: ", "Seuraavat kutsu
 // Select output format based on GET parameters or positional parameter.
 $format = $_GET['format'] ?? $argv[1] ?? 'text';
 
-$spelling = $format !== 'text';
+switch ($format) {
+case 'text':
+    $content = 'text/plain; charset=UTF-8';
+    $spelling = FALSE;
+    $synthcmd = FALSE;
+    break;
+case 'spell':
+    $content = 'text/plain; charset=UTF-8';
+    $spelling = TRUE;
+    $synthcmd = FALSE;
+    break;
+case 'wav':
+    $content = 'audio/x-wav';
+    $spelling = TRUE;
+    $synthcmd = "text2wave -f 16000 -eval '(hy_fi_mv_diphone)' <%1\$s";
+    break;
+case 'opus':
+    $content = 'audio/ogg; codecs=opus';
+    $spelling = TRUE;
+    $synthcmd = "text2wave -eval '(hy_fi_mv_diphone)' <%1\$s | opusenc --bitrate 40 - -";
+    break;
+default:
+    header('Content-Type: text/plain; charset=UTF-8');
+    http_response_code(400);
+    print("Invalid format requested\n");
+    exit(1);
+}
+
 $msg = "Hyvää huomenta! ". call_list($changes->added, $new_intro, $spelling) . ". " . call_list($changes->removed, $old_intro, $spelling) . ". ";
 
-if ($format === 'opus') {
+header("Content-Type: $content");
+
+if ($synthcmd === FALSE) {
+    // Output as plain text
+    print($msg."\n");
+} else {
     // Synthesize speech
-    header('Content-Type: audio/ogg; codecs=opus');
 
     // This ugly hack is because php-fpm doesn't support writing
     // directly to stdout handle.
     $tmp = tmpfile();
     fwrite($tmp, iconv("UTF-8", "ISO 8859-1", $msg));
     $safe_tmp = escapeshellarg(stream_get_meta_data($tmp)['uri']);
-    passthru("text2wave -eval '(hy_fi_mv_diphone)' <$safe_tmp | opusenc --bitrate 40 - -");
+    passthru(sprintf($synthcmd, $safe_tmp));
     fclose($tmp);
-} else {
-    // Output as plain text
-    header('Content-Type: text/plain; charset=UTF-8');
-    print($msg."\n");
 }
