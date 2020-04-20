@@ -28,8 +28,8 @@ function date_to_commit($repo, $branch, $date) {
     $commit = trim(fgets($pipes[1]));
     pclose($pipes[1]);
     proc_close($proc);
-    return $commit;
-}    
+    return $commit === '' ? FALSE : $commit;
+}
 
 // Get handle to koolit list
 function open_koolit($repo, $version) {
