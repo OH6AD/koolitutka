@@ -127,16 +127,13 @@ if ($format === 'opus') {
     // Synthesize speech
     header('Content-Type: audio/ogg; codecs=opus');
 
-    $fds = [
-        0 => ['pipe', 'r'],
-        1 => STDOUT, // Needs to be this to support php-fpm
-        2 => STDERR, // stderr passthrough
-    ];
-
-    $proc = proc_open("text2wave -f 48000 -eval '(hy_fi_mv_diphone)' | opusenc --bitrate 40 - -", $fds, $pipes);
-    fwrite($pipes[0], iconv('UTF-8', 'ISO-8859-1', $msg));
-    pclose($pipes[0]);
-    proc_close($proc);
+    // This ugly hack is because php-fpm doesn't support writing
+    // directly to stdout handle.
+    $tmp = tmpfile();
+    fwrite($tmp, $msg);
+    $safe_tmp = escapeshellarg(stream_get_meta_data($tmp)['uri']);
+    passthru("text2wave -f 48000 -eval '(hy_fi_mv_diphone)' <$safe_tmp | opusenc --bitrate 40 - -");
+    fclose($tmp);
 } else {
     // Output as plain text
     header('Content-Type: text/plain; charset=UTF-8');
