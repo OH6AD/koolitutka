@@ -157,7 +157,12 @@ default:
     exit(1);
 }
 
-$msg = "Hyvää huomenta! ". call_list($changes->added, $new_intro, $spelling) . ". " . call_list($changes->removed, $old_intro, $spelling) . ". ";
+$msg = "Hyvää huomenta! ";
+if (count($changes->added) + count($changes->removed) === 0) {
+    $msg .= "Ei muutoksia voimassa olevissa radioamatöörikutsuissa.";
+} else {
+    $msg .= call_list($changes->added, $new_intro, $spelling) . ". " . call_list($changes->removed, $old_intro, $spelling) . ". ";
+}
 
 header("Content-Type: $content");
 
