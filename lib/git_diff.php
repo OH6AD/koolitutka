@@ -52,7 +52,7 @@ function get_next_active($pipe) {
         preg_match('/^([^\t]*)\tVOIMAS.*/', $line, $matches);
         if (empty($matches)) continue;
 
-        return $matches[1];
+        return trim($matches[1]);
     }
 }
 
