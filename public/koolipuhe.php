@@ -16,6 +16,14 @@ if ($config === FALSE) {
 }
 $config = (object)$config;
 
+// Get current time before manipulating time zones. Format to a greeting.
+$hour = idate('H');
+if ($hour < 5) $greet = 'Öri öri.';
+elseif ($hour < 10) $greet = 'Hyvää huomenta!';
+elseif ($hour < 18) $greet = 'Hyvää päivää!';
+elseif ($hour < 22) $greet = 'Hyvää iltaa!';
+else $greet = 'Hyvää myöhäisiltaa!';
+
 // Make sure string comparison are stable
 putenv("LC_ALL=C");
 
@@ -157,7 +165,7 @@ default:
     exit(1);
 }
 
-$msg = "Hyvää huomenta! ";
+$msg = $greet . ' ';
 if (count($changes->added) + count($changes->removed) === 0) {
     $msg .= "Ei muutoksia voimassa olevissa radioamatöörikutsuissa.";
 } else {
