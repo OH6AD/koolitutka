@@ -130,9 +130,9 @@ if ($format === 'opus') {
     // This ugly hack is because php-fpm doesn't support writing
     // directly to stdout handle.
     $tmp = tmpfile();
-    fwrite($tmp, $msg);
+    fwrite($tmp, iconv("UTF-8", "ISO 8859-1", $msg));
     $safe_tmp = escapeshellarg(stream_get_meta_data($tmp)['uri']);
-    passthru("text2wave -f 48000 -eval '(hy_fi_mv_diphone)' <$safe_tmp | opusenc --bitrate 40 - -");
+    passthru("text2wave -eval '(hy_fi_mv_diphone)' <$safe_tmp | opusenc --bitrate 40 - -");
     fclose($tmp);
 } else {
     // Output as plain text
