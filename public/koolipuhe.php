@@ -97,7 +97,15 @@ function spell_call($input) {
 
 // Spell list of calls in Finnish
 function call_list($list, $intro, $spell) {
+    global $config;
     $calls = $spell ? array_map("spell_call", $list) : $list;
+
+    // DoS detection
+    if (count($calls) > $config->doslimit) {
+        $calls = array_slice($calls, 0, $config->doslimit);
+        array_push($calls, "niin edelleen, ei mulle makseta tästä. Tule itse tänne luettelemaan, apina");
+    }
+
     switch (count($calls)) {
     case 0: return $intro[0];
     case 1: return $intro[1] . $calls[0];
