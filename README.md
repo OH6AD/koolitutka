@@ -31,7 +31,7 @@ Requirements:
 
 Usage:
 
-1. Clone git repository https://github.com/OH6AD/koolit/ to somewhere
+1. Clone git repository https://github.com/OH6AD/koolit/ to somewhere. You may use `--bare` to save some space.
 2. Copy `config.example.ini` to `config.in`
 3. Edit `config.ini` and set repository path correctly
 4. Expose `public/` directory on your HTTP server
