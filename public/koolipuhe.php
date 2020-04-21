@@ -137,22 +137,28 @@ if ($old_commit === "") {
 }
 $changes = compare_active($config->repo, $old_commit, $config->branch);
 
+$quiet_intro = ['', '', ''];
 $new_intro = ["Ei uusia asemalupia", "Traficom on myöntänyt yhden uuden asemaluvan: ", "Traficom on myöntänyt seuraavat uudet asemaluvat: "];
 $old_intro = ["Ei poistuneita kutsuja", "Yksi kutsu poistui: ", "Seuraavat kutsut poistuivat: "];
 
 // Select output format based on GET parameters or positional parameter.
 $format = $_GET['format'] ?? $argv[1] ?? 'text';
 
+// Default states for formatting
+$html = FALSE;
+$spelling = FALSE;
+
+// Default states for rendering
+$synthcmd = FALSE;
+$matrix = FALSE;
+
 switch ($format) {
 case 'text':
     $content = 'text/plain; charset=UTF-8';
-    $spelling = FALSE;
-    $synthcmd = FALSE;
     break;
 case 'spell':
     $content = 'text/plain; charset=UTF-8';
     $spelling = TRUE;
-    $synthcmd = FALSE;
     break;
 case 'wav':
     $content = 'audio/x-wav';
@@ -164,6 +170,21 @@ case 'opus':
     $spelling = TRUE;
     $synthcmd = "text2wave -eval '(hy_fi_mv_diphone)' <%1\$s | opusenc --bitrate 40 - -";
     break;
+case 'html':
+    // Matrix protype
+    $content = 'text/html; charset=UTF-8';
+    $html = TRUE;
+    break;
+case 'matrix':
+    if (php_sapi_name() !== 'cli') {
+        header('Content-Type: text/plain; charset=UTF-8');
+        http_response_code(400);
+        print("This mode is allowed only on command-line\n");
+        exit(1);
+    }
+    $html = TRUE;
+    $matrix = TRUE;
+    break;
 default:
     header('Content-Type: text/plain; charset=UTF-8');
     http_response_code(400);
@@ -171,26 +192,69 @@ default:
     exit(1);
 }
 
-$msg = $greet . ' ';
-if (count($changes->added) + count($changes->removed) === 0) {
-    $msg .= "Ei muutoksia voimassa olevissa radioamatöörikutsuissa.";
+// Message formatting
+if ($html) {
+    $dom = new DOMDocument('1.0', 'UTF-8');
+    if (count($changes->added) + count($changes->removed)) {
+        $s = $greet.' Traficomissa tapahtuu:';
+        $msg = "$s ";
+        $dom->appendChild($dom->createTextNode($s));
+        $ul = $dom->createElement("ul");
+        if (count($changes->added)) {
+            $s = call_list($changes->added, $quiet_intro, $spelling);
+            $li = $dom->createElement("li");
+            $li->appendChild($dom->createTextNode("➕ $s"));
+            $ul->appendChild($li);
+            $msg .= "(+) $s ";
+        }
+        if (count($changes->removed)) {
+            $s = call_list($changes->removed, $quiet_intro, $spelling);
+            $li = $dom->createElement("li");
+            $li->appendChild($dom->createTextNode("➖ $s"));
+            $ul->appendChild($li);
+            $msg .= "(-) $s";
+        }
+        $dom->appendChild($ul);
+    } else {
+        $s = $greet." Ei muutoksia voimassa olevissa radioamatöörikutsuissa.";
+        $dom->appendChild($dom->createTextNode($s));
+        $msg = $s;
+    }
 } else {
-    $msg .= call_list($changes->added, $new_intro, $spelling) . ". " . call_list($changes->removed, $old_intro, $spelling) . ". ";
+    $msg = $greet . ' ';
+    if (count($changes->added) + count($changes->removed)) {
+        $msg .= call_list($changes->added, $new_intro, $spelling) . ". " . call_list($changes->removed, $old_intro, $spelling) . ". ";
+    } else {
+        $msg .= "Ei muutoksia voimassa olevissa radioamatöörikutsuissa.";
+    }
 }
 
-header("Content-Type: $content");
-
-if ($synthcmd === FALSE) {
-    // Output as plain text
-    print($msg."\n");
+// Final output rendering
+if ($matrix) {
+    print("Not yet implemented\n");
 } else {
-    // Synthesize speech
+    // HTTP output
+    header("Content-Type: $content");
 
-    // This ugly hack is because php-fpm doesn't support writing
-    // directly to stdout handle.
-    $tmp = tmpfile();
-    fwrite($tmp, iconv("UTF-8", "ISO 8859-1", $msg));
-    $safe_tmp = escapeshellarg(stream_get_meta_data($tmp)['uri']);
-    passthru(sprintf($synthcmd, $safe_tmp));
-    fclose($tmp);
+    if ($synthcmd) {
+        // Synthesize speech
+
+        // This ugly hack is because php-fpm doesn't support writing
+        // directly to stdout handle.
+        $tmp = tmpfile();
+        fwrite($tmp, iconv("UTF-8", "ISO 8859-1", $msg));
+        $safe_tmp = escapeshellarg(stream_get_meta_data($tmp)['uri']);
+        passthru(sprintf($synthcmd, $safe_tmp));
+        fclose($tmp);
+    } else {
+        if ($html) {
+            // Produce textual output for debugging purposes
+            $el = $dom->createComment($msg);
+            $dom->appendChild($el);
+            print($msg = $dom->saveHTML());
+        } else {
+            // Output as plain text
+            print($msg."\n");
+        }
+    }
 }
