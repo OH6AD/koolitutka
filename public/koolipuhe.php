@@ -200,6 +200,7 @@ if ($html) {
         $msg = "$s ";
         $dom->appendChild($dom->createTextNode($s));
         $ul = $dom->createElement("ul");
+        $ul->setAttribute('style', 'list-style: none;');
         if (count($changes->added)) {
             $s = call_list($changes->added, $quiet_intro, $spelling);
             $li = $dom->createElement("li");
