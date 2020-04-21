@@ -24,7 +24,7 @@ elseif ($hour < 18) $greet = 'Hyvää päivää!';
 elseif ($hour < 22) $greet = 'Hyvää iltaa!';
 else $greet = 'Hyvää myöhäisiltaa!';
 
-// Make sure string comparison are stable
+// Make sure string comparisons are stable
 putenv("LC_ALL=C");
 
 $prefixes = [
@@ -129,6 +129,12 @@ function call_list($list, $intro, $spell) {
 $since = $_GET['since'] ?? $argv[2] ?? $config->since_default;
 if ($config->fetch) git_fetch($config->repo);
 $old_commit = date_to_commit($config->repo, $config->branch, $since);
+if ($old_commit === "") {
+    http_response_code(400);
+    header('Content-Type: text/plain; charset=UTF-8');
+    print("We don't have that old data. Please give a newer date.\n");
+    exit(1);
+}
 $changes = compare_active($config->repo, $old_commit, $config->branch);
 
 $new_intro = ["Ei uusia asemalupia", "Traficom on myöntänyt yhden uuden asemaluvan: ", "Traficom on myöntänyt seuraavat uudet asemaluvat: "];

@@ -15,7 +15,10 @@ function git_fetch($repo) {
     proc_close($proc);
 }
 
-// Get commit after given date or FALSE if no commits have occurred after given date.
+// Get the commit hash of most recent commit at the given
+// time. Returns emmpty string if the time is prehistoric (before
+// initial commit). If the history is non-linear, this may not return
+// the commit you are looking for.
 function date_to_commit($repo, $branch, $date) {
     $fds = [
         1 => ["pipe", "w"], // Get data via pipe
@@ -24,11 +27,11 @@ function date_to_commit($repo, $branch, $date) {
 
     $safe_date = escapeshellarg($date);
     $safe_branch = escapeshellarg($branch);
-    $proc = proc_open("git log --reverse --since=$safe_date --format=%H $safe_branch", $fds, $pipes, $repo);
+    $proc = proc_open("git log -1 --until=$safe_date --format=%H $safe_branch", $fds, $pipes, $repo);
     $commit = trim(fgets($pipes[1]));
     pclose($pipes[1]);
     proc_close($proc);
-    return $commit === '' ? FALSE : $commit;
+    return $commit;
 }
 
 // Get handle to koolit list
@@ -63,9 +66,6 @@ function compare_active($repo, $old_version, $new_version) {
         "removed" => [],
     ];
 
-    // If source is not given, return empty set
-    if ($old_version === FALSE) return (object)$out;
-    
     // Open handles
     $old = open_koolit($repo, $old_version);
     $new = open_koolit($repo, $new_version);
