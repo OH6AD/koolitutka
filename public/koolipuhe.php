@@ -17,6 +17,7 @@ if ($config === FALSE) {
 }
 $config = (object)$config;
 $config->matrix = (object)$config->matrix;
+$config->git = (object)$config->git;
 
 // Get current time before manipulating time zones. Format to a greeting.
 $hour = idate('H');
@@ -129,15 +130,15 @@ function call_list($list, $intro, $spell) {
 
 // Git operations. Fetch and find
 $since = $_GET['since'] ?? $argv[2] ?? $config->since_default;
-if ($config->fetch) git_fetch($config->repo);
-$old_commit = date_to_commit($config->repo, $config->branch, $since);
+if ($config->git->fetch) git_fetch($config->git->repo);
+$old_commit = date_to_commit($config->git->repo, $config->git->branch, $since);
 if ($old_commit === "") {
     http_response_code(400);
     header('Content-Type: text/plain; charset=UTF-8');
     print("We don't have that old data. Please give a newer date.\n");
     exit(1);
 }
-$changes = compare_active($config->repo, $old_commit, $config->branch);
+$changes = compare_active($config->git->repo, $old_commit, $config->git->branch);
 
 $quiet_intro = ['', '', ''];
 $new_intro = ["Ei uusia asemalupia", "Traficom on myöntänyt yhden uuden asemaluvan: ", "Traficom on myöntänyt seuraavat uudet asemaluvat: "];
