@@ -6,6 +6,9 @@ Services based on changes to Finnish radio amateur callsign database.
 Used for getting ham radio callsigns to an IRC channel, by default
 #oh6ad on IRCNet. See [source](koolitutka) for details.
 
+NB! This is no longer maintained because the speech callsign diffence
+tool below can do the same thing with *matrix* parameter.
+
 Requirements:
 
 - `git jq curl`
@@ -20,14 +23,14 @@ Usage:
 
 The callsign repository is updated once a day at 06:04 on Europe/Helsinki.
 
-## Ham callsign to speech
+## Callsign difference tool
 
 May be used to speak out new callsigns as a bulletin on a repeater. Or
 just for fun.
 
 Requirements:
 
-- `git php festival festvox-suopuhe-mv opus-tools`
+- `git php festival festvox-suopuhe-mv opus-tools php-curl php-xml`
 
 Usage:
 
@@ -46,4 +49,10 @@ Or just as text:
 
 ```sh
 php public/koolipuhe.php text 2020-04-10
+```
+
+Or send Matrix message;
+
+```sh
+php public/koolipuhe.php matrix
 ```

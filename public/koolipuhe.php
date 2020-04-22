@@ -1,13 +1,14 @@
 <?php
 
 require_once(__DIR__.'/../lib/git_diff.php');
+require_once(__DIR__.'/../lib/matrix.php');
 
 // Make it work if STDERR is not available
 if (!defined('STDERR')) {
     define('STDERR', fopen('/dev/null', 'w'));
 }
 
-$config = parse_ini_file(__DIR__.'/../config.ini');
+$config = parse_ini_file(__DIR__.'/../config.ini', TRUE);
 if ($config === FALSE) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=UTF-8');
@@ -15,6 +16,7 @@ if ($config === FALSE) {
     exit(1);
 }
 $config = (object)$config;
+$config->matrix = (object)$config->matrix;
 
 // Get current time before manipulating time zones. Format to a greeting.
 $hour = idate('H');
@@ -171,17 +173,10 @@ case 'opus':
     $synthcmd = "text2wave -eval '(hy_fi_mv_diphone)' <%1\$s | opusenc --bitrate 40 - -";
     break;
 case 'html':
-    // Matrix protype
     $content = 'text/html; charset=UTF-8';
     $html = TRUE;
     break;
 case 'matrix':
-    if (php_sapi_name() !== 'cli') {
-        header('Content-Type: text/plain; charset=UTF-8');
-        http_response_code(400);
-        print("This mode is allowed only on command-line\n");
-        exit(1);
-    }
     $html = TRUE;
     $matrix = TRUE;
     break;
@@ -198,27 +193,24 @@ if ($html) {
     if (count($changes->added) + count($changes->removed)) {
         $s = $greet.' Traficomissa tapahtuu:';
         $msg = "$s ";
-        $dom->appendChild($dom->createTextNode($s));
-        $ul = $dom->createElement("ul");
-        $ul->setAttribute('style', 'list-style: none;');
+        $dom->appendChild($dom->createTextNode('📻 '.$s));
         if (count($changes->added)) {
+            $br = $dom->createElement("br");
+            $dom->appendChild($br);
             $s = call_list($changes->added, $quiet_intro, $spelling);
-            $li = $dom->createElement("li");
-            $li->appendChild($dom->createTextNode("➕ $s"));
-            $ul->appendChild($li);
+            $dom->appendChild($dom->createTextNode("➕ $s"));
             $msg .= "(+) $s ";
         }
         if (count($changes->removed)) {
+            $br = $dom->createElement("br");
+            $dom->appendChild($br);
             $s = call_list($changes->removed, $quiet_intro, $spelling);
-            $li = $dom->createElement("li");
-            $li->appendChild($dom->createTextNode("➖ $s"));
-            $ul->appendChild($li);
+            $dom->appendChild($dom->createTextNode("➖ $s"));
             $msg .= "(-) $s";
         }
-        $dom->appendChild($ul);
     } else {
         $s = $greet." Ei muutoksia voimassa olevissa radioamatöörikutsuissa.";
-        $dom->appendChild($dom->createTextNode($s));
+        $dom->appendChild($dom->createTextNode('📻 '.$s));
         $msg = $s;
     }
 } else {
@@ -232,7 +224,14 @@ if ($html) {
 
 // Final output rendering
 if ($matrix) {
-    print("Not yet implemented\n");
+    if (php_sapi_name() !== 'cli') {
+        header('Content-Type: text/plain; charset=UTF-8');
+        http_response_code(400);
+        print("This mode is allowed only on command-line\n");
+        exit(1);
+    }
+    $matrix = new Matrix($config->matrix->homeserver, $config->matrix->token);
+    $matrix->notice($config->matrix->room, $msg, $dom);
 } else {
     // HTTP output
     header("Content-Type: $content");
