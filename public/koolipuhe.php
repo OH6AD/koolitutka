@@ -131,14 +131,21 @@ function call_list($list, $intro, $spell) {
 // Update git
 if ($config->git->fetch) git_raw('git fetch', $config->git->repo);
 
-// Date to commit hash
+// Date or tag?
 $since = $_GET['since'] ?? $argv[2] ?? $config->since_default;
-$old_commit = date_to_commit($config->git->repo, $config->git->branch, $since);
-if ($old_commit === "") {
-    http_response_code(400);
-    header('Content-Type: text/plain; charset=UTF-8');
-    print("We don't have that old data. Please give a newer date.\n");
-    exit(1);
+preg_match('/^tag:(.*)/', $since, $matches);
+if (empty($matches)) {
+    $use_tag = FALSE;
+    $old_commit = date_to_commit($config->git->repo, $config->git->branch, $since);
+    if ($old_commit === "") {
+        http_response_code(400);
+        header('Content-Type: text/plain; charset=UTF-8');
+        print("We don't have that old data. Please give a newer date.\n");
+        exit(1);
+    }
+} else {
+    $use_tag = TRUE;
+    $old_commit = $matches[1];
 }
 
 // Compare changes to a file between given commits
@@ -262,5 +269,16 @@ if ($matrix) {
             // Output as plain text
             print($msg."\n");
         }
+    }
+}
+
+// Update tag if used and it's safe
+if ($use_tag) {
+    if (php_sapi_name() === 'cli') {
+        $safe_tag = escapeshellarg($old_commit);
+        $safe_branch = escapeshellarg($config->git->branch);
+        git_raw("git tag -f $safe_tag $safe_branch", $config->git->repo);
+    } else {
+        error_log('User requested to update tag over HTTP. Refusing.');
     }
 }
