@@ -244,7 +244,11 @@ if ($matrix) {
         exit(1);
     }
     $matrix = new Matrix($config->matrix->homeserver, $config->matrix->token);
-    $matrix->notice($config->matrix->room, $msg, $dom);
+    $sent = $matrix->notice($config->matrix->room, $msg, $dom);
+    if (!$sent) {
+        print("Unable to send Matrix message.\n");
+        exit(2);
+    }
 } else {
     // HTTP output
     header("Content-Type: $content");
