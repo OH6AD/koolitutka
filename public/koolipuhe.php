@@ -128,9 +128,11 @@ function call_list($list, $intro, $spell) {
     }
 }
 
-// Git operations. Fetch and find
-$since = $_GET['since'] ?? $argv[2] ?? $config->since_default;
+// Update git
 if ($config->git->fetch) git_raw('git fetch', $config->git->repo);
+
+// Date to commit hash
+$since = $_GET['since'] ?? $argv[2] ?? $config->since_default;
 $old_commit = date_to_commit($config->git->repo, $config->git->branch, $since);
 if ($old_commit === "") {
     http_response_code(400);
@@ -138,8 +140,11 @@ if ($old_commit === "") {
     print("We don't have that old data. Please give a newer date.\n");
     exit(1);
 }
+
+// Compare changes to a file between given commits
 $changes = compare_active($config->git->repo, $old_commit, $config->git->branch);
 
+// Some Finnish constants, TODO to config file?
 $quiet_intro = ['', '', ''];
 $new_intro = ["Ei uusia asemalupia", "Traficom on myöntänyt yhden uuden asemaluvan: ", "Traficom on myöntänyt seuraavat uudet asemaluvat: "];
 $old_intro = ["Ei poistuneita kutsuja", "Yksi kutsu poistui: ", "Seuraavat kutsut poistuivat: "];
