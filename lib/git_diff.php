@@ -4,14 +4,14 @@
  * Functions for handling git differences
  */
 
-// Fetch from origin.
-function git_fetch($repo) {
+// Run a command which requires no input or output processing, e.g. git fetch.
+function git_raw($cmd, $cwd) {
     $fds = [
         1 => STDERR, // pass stdout to stderr
         2 => STDERR, // stderr passthrough
     ];
 
-    $proc = proc_open("git fetch", $fds, $pipes, $repo);
+    $proc = proc_open($cmd, $fds, $pipes, $cwd);
     proc_close($proc);
 }
 

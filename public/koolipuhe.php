@@ -130,7 +130,7 @@ function call_list($list, $intro, $spell) {
 
 // Git operations. Fetch and find
 $since = $_GET['since'] ?? $argv[2] ?? $config->since_default;
-if ($config->git->fetch) git_fetch($config->git->repo);
+if ($config->git->fetch) git_raw('git fetch', $config->git->repo);
 $old_commit = date_to_commit($config->git->repo, $config->git->branch, $since);
 if ($old_commit === "") {
     http_response_code(400);
