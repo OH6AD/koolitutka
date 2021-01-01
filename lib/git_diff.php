@@ -35,14 +35,14 @@ function date_to_commit($repo, $branch, $date) {
 }
 
 // Get handle to koolit list
-function open_koolit($repo, $version) {
+function open_koolit($repo, $version, $sort=false) {
     $fds = [
         1 => ["pipe", "w"], // Get data via pipe
         2 => STDERR, // stderr passthrough
     ];
 
     $safe_version = escapeshellarg($version);
-    $proc = proc_open("git cat-file -p $safe_version:oh-callsigns.tsv | sort", $fds, $pipes, $repo);
+    $proc = proc_open("git cat-file -p $safe_version:oh-callsigns.tsv". (sort ? "|sort" : ""), $fds, $pipes, $repo);
     return (object)["proc" => $proc, "pipe" => $pipes[1]];
 }
 
@@ -67,8 +67,8 @@ function compare_active($repo, $old_version, $new_version) {
     ];
 
     // Open handles
-    $old = open_koolit($repo, $old_version);
-    $new = open_koolit($repo, $new_version);
+    $old = open_koolit($repo, $old_version, TRUE);
+    $new = open_koolit($repo, $new_version, TRUE);
 
     // Start finding diffences
     $old_line = get_next_active($old->pipe);
