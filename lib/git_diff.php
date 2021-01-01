@@ -59,6 +59,11 @@ function get_next_active($pipe) {
     }
 }
 
+function close_git($obj) {
+    pclose($obj->pipe);
+    proc_close($obj->proc);
+}
+
 // Comparison of two versions
 function compare_active($repo, $old_version, $new_version) {
     $out = [
@@ -98,10 +103,8 @@ function compare_active($repo, $old_version, $new_version) {
         }
     }
 
-    pclose($old->pipe);
-    pclose($new->pipe);
-    proc_close($old->proc);
-    proc_close($new->proc);
+    close_git($old);
+    close_git($new);
 
     return (object)$out;
 }
