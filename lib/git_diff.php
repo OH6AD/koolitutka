@@ -41,8 +41,8 @@ function open_koolit($repo, $version, $sort=false) {
         2 => STDERR, // stderr passthrough
     ];
 
-    $safe_version = escapeshellarg($version);
-    $proc = proc_open("git cat-file -p $safe_version:oh-callsigns.tsv". (sort ? "|sort" : ""), $fds, $pipes, $repo);
+    $safe_object = escapeshellarg("$version:oh-callsigns.tsv");
+    $proc = proc_open("git cat-file -p $safe_object". (sort ? "|sort" : ""), $fds, $pipes, $repo);
     return (object)["proc" => $proc, "pipe" => $pipes[1]];
 }
 
