@@ -56,6 +56,7 @@ $insert_end_commit = $db->prepare('INSERT INTO updates VALUES (?,?)');
 $update_event = $db->prepare('UPDATE event SET to_date=:date WHERE callsign=:callsign AND status=:status AND to_date=:prev_date');
 $insert_event = $db->prepare('INSERT INTO event VALUES (:callsign,:neighbour,:status,:date,:date)');
 $anomaly_bridge = $db->prepare("UPDATE event SET to_date=:date WHERE status != 'VOIMASSA' AND to_date=:prev_date");
+$anomaly2_bridge = $db->prepare("UPDATE event SET to_date=:date WHERE to_date=:prev_date");
 
 $from_result = db_execute($select_from_commit)->fetchArray();
 $range = $from_result['hash'].'..'.$config->git->branch;
@@ -184,15 +185,28 @@ while (TRUE) {
         }
     }
 
+    // Incident clean-up
     if ($withdrawns === 0) {
         // Anomaly in data between 2019-12-13 and 2019-12-21 when
         // KARENSSI and VARAUS were completely missing. Filling the
-        // gap with best guess (=no changes during the period).
+        // gap with a best guess (=no changes during the period).
         db_execute($anomaly_bridge, [
             'prev_date' => $prev_date,
             'date' => $date,
         ]);
         $bridged = $db->changes();
+    } else if ($hash === 'b3eb1095da9466af79503d39c72fdf89f6fab123') {
+        // A bad back to the office day at Traficom after a refreshing
+        // Christmas holiday in 2020-01-06 resulted in a tragicomic
+        // erasure of many long timers from the callsign
+        // database. This fix hides the trails.
+        db_execute($anomaly2_bridge, [
+            'prev_date' => $prev_date,
+            'date' => $date,
+        ]);
+        $bridged = $db->changes();
+    } else {
+        $bridged = 0;
     }
     
     // Processing of a commit is ready. Updating commit pointer and
@@ -200,7 +214,7 @@ while (TRUE) {
     db_execute($insert_end_commit, [$hash, $date]);
     $db->exec('END');
 
-    print("OK".($mangles === 0 ? '' : ", mangles: $mangles").($duplicates === 0 ? '' : ", duplicates: $duplicates").($withdrawns === 0 ? ", gap fills: $bridged" : '').($wildcard_duplicates === 0 ? '' : ", wildcard duplicates: $wildcard_duplicates")."\n");
+    print("OK".($mangles === 0 ? '' : ", mangles: $mangles").($duplicates === 0 ? '' : ", duplicates: $duplicates").($bridged === 0 ? '' : ", gap fills: $bridged").($wildcard_duplicates === 0 ? '' : ", wildcard duplicates: $wildcard_duplicates")."\n");
 
     $prev_date = $date;
 }
