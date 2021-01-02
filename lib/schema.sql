@@ -10,11 +10,11 @@ CREATE TABLE event (
 );
 
 -- Used by the engine itself
-CREATE INDEX ix_callsign_date ON event(callsign, from_date);
 CREATE INDEX ix_status_callsign ON event(status, callsign, to_date);
-CREATE INDEX ix_anomaly ON event(to_date, status);
+CREATE INDEX ix_current ON event(to_date, status);
 
 -- Useful indices for common operations
+CREATE INDEX ix_callsign_date ON event(callsign, to_date);
 CREATE INDEX ix_neighbour ON event(neighbour, to_date);
 
 CREATE TABLE updates (
