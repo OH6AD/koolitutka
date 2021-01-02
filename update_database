@@ -127,9 +127,40 @@ while (TRUE) {
     }
     close_git($callsigns);
 
+    // Wildcard duplicate detection. It is another fault in the
+    // original data when a call sign is withdrawn. For about one
+    // month, the call sign is reserved both as its full form
+    // (e.g. OH6EYA) and the wildcard form (OH*EYA). If the states are
+    // the same, then non-wildcard should not be stored.
+    foreach ($table as $callsign => &$status) {
+        $wildcard = substr_replace($callsign,'*',2,1);
+        if ($wildcard === $callsign) continue;
+        if (!array_key_exists($wildcard, $table)) continue;
+        if ($table[$wildcard] === NULL) continue;
+
+        // If we got this far, we have an existing wildcard to examine.
+        if ($status === 'VOIMASSA') {
+            // If the call sign is active, then throw the wildcard away
+            $table[$wildcard] = NULL;
+        } else if ($status === $table[$wildcard]) {
+            // Only do it if states match, keep the wildcard one and throw this away
+            $status = NULL;
+        } else {
+            printf("Invalid duplicate state in $hash callsigns $callsign is $status but $wildcard is {$table[$wildcard]}\n");
+            exit(3);
+        }
+    }
+
     // Now we have a cleaner data and we're ready populate the database
     $db->exec('BEGIN');
+    $wildcard_duplicates = 0;
     foreach ($table as $callsign => $status) {
+        // Skip if the call sign is marked as to be skipped
+        if ($status === NULL) {
+            $wildcard_duplicates++;
+            continue;
+        }
+
         $info = [
             'prev_date' => $prev_date,
             'date' => $date,
@@ -168,7 +199,7 @@ while (TRUE) {
     db_execute($insert_end_commit, [$hash, $date]);
     $db->exec('END');
 
-    print("OK".($mangles === 0 ? '' : ", mangles: $mangles").($duplicates === 0 ? '' : ", duplicates: $duplicates").($withdrawns === 0 ? ", gap fills: $bridged" : '')."\n");
+    print("OK".($mangles === 0 ? '' : ", mangles: $mangles").($duplicates === 0 ? '' : ", duplicates: $duplicates").($withdrawns === 0 ? ", gap fills: $bridged" : '').($wildcard_duplicates === 0 ? '' : ", wildcard duplicates: $wildcard_duplicates")."\n");
 
     $prev_date = $date;
 }
