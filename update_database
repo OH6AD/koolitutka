@@ -57,13 +57,8 @@ $update_event = $db->prepare('UPDATE event SET to_date=:date WHERE callsign=:cal
 $insert_event = $db->prepare('INSERT INTO event VALUES (:callsign,:status,:date,:date)');
 
 $from_result = db_execute($select_from_commit)->fetchArray();
-if ($from_result === FALSE) {
-    $range = 'bc9d5424fa0f3c5afb1bbcf33249ec7e09432320..'.$config->git->branch;
-    $prev_date = '';
-} else {
-    $range = $from_result['hash'].'..'.$config->git->branch;
-    $prev_date = $from_result['authored'];
-}
+$range = $from_result['hash'].'..'.$config->git->branch;
+$prev_date = $from_result['authored'];
 
 // Update git
 if ($config->git->fetch) git_raw('git fetch', $config->git->repo);
