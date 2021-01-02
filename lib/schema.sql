@@ -6,7 +6,7 @@ CREATE TABLE event (
 	neighbour TEXT NOT NULL, -- For finding the neighbours
 	status TEXT NOT NULL,    -- VARAUS / VOIMASSA / KARENSSI
 	from_date TEXT NOT NULL, -- Start date of this status
-	to_date TEXT             -- End date of this status. NULL if active.
+	to_date TEXT NOT NULL    -- End date of this status. 'NOW' when current.
 );
 
 -- Used by the engine itself

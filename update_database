@@ -53,11 +53,11 @@ function db_execute(&$stmt, $values = [], $error = "Database error") {
 
 $select_from_commit = $db->prepare('SELECT hash,authored FROM updates ORDER BY rowid DESC LIMIT 1');
 $insert_end_commit = $db->prepare('INSERT INTO updates VALUES (?,?)');
-$mark_active_events = $db->prepare("UPDATE event SET to_date='Z' WHERE to_date IS NULL");
-$update_event = $db->prepare("UPDATE event SET to_date=NULL WHERE callsign=:callsign AND status=:status AND to_date='Z'");
-$insert_event = $db->prepare("INSERT INTO event (callsign, neighbour, status, from_date) VALUES (:callsign, :neighbour, :status, :date)");
-$anomaly_bridge = $db->prepare("UPDATE event SET to_date=NULL WHERE status != 'VOIMASSA' AND to_date='Z'");
-$anomaly2_bridge = $db->prepare("UPDATE event SET to_date=NULL WHERE to_date='Z'");
+$mark_active_events = $db->prepare("UPDATE event SET to_date='Z' WHERE to_date='NOW'");
+$update_event = $db->prepare("UPDATE event SET to_date='NOW' WHERE callsign=:callsign AND status=:status AND to_date='Z'");
+$insert_event = $db->prepare("INSERT INTO event VALUES (:callsign, :neighbour, :status, :date, 'NOW')");
+$anomaly_bridge = $db->prepare("UPDATE event SET to_date='NOW' WHERE status != 'VOIMASSA' AND to_date='Z'");
+$anomaly2_bridge = $db->prepare("UPDATE event SET to_date='NOW' WHERE to_date='Z'");
 $unmark_old_events = $db->prepare("UPDATE event SET to_date=:prev_date WHERE to_date='Z'");
 
 $from_result = db_execute($select_from_commit)->fetchArray();
