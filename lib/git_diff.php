@@ -64,10 +64,10 @@ function git_log($repo, $range, $file = NULL) {
 // Read line from handle and fit a regex to it. On EOF, FALSE is
 // returned. When no match, input string is returned. Otherwise, a
 // match array is returned.
-function parse_line($h, $regex) {
+function parse_line($h, $regex, $prepend='') {
     $str = fgets($h);
     if ($str === FALSE) return FALSE;
-    preg_match($regex, $str, $matches);
+    preg_match($regex, $prepend.$str, $matches);
     if (empty($matches)) return $str;
     return $matches;
 }
