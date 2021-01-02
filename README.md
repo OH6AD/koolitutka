@@ -1,6 +1,50 @@
 # Koolitutka
 Services based on changes to Finnish radio amateur callsign database.
 
+## Ham radio callsign database
+
+Tool which populates SQLite database when run with all the
+history. Handles all oddities in Ficora and Traficom data and produces
+a consistent view to the data.
+
+Requirements:
+
+- `git php-cli php-sqlite3`
+- `sqlite3` if you want to use the command-line interface, too.
+
+Usage:
+
+1. Clone git repository https://github.com/OH6AD/koolit/ to
+   somewhere. You may use `--bare` to save some space.
+2. Copy `config.example.ini` to `config.ini`
+3. Edit `config.ini` and set repository path correctly. Set database
+   path to preferrably an absolute path. You can ignore all Matrix
+   related stuff.
+4. Run the tool `update_database` periodically in a systemd timer (at
+   07 in the morning is fine), cron or similar. Database file is
+   created if not existing.
+
+Enjoy the database. Check [database schema](lib/schema.sql). An
+example query:
+
+```
+$ sqlite3 db.sqlite 
+SQLite version 3.31.1 2020-01-27 19:55:54
+Enter ".help" for usage hints.
+sqlite> .mode line
+sqlite> select * from event where callsign='OH64K'; 
+ callsign = OH64K
+   status = VARAUS
+from_date = 2018-03-28
+  to_date = 2018-04-16
+
+ callsign = OH64K
+   status = VOIMASSA
+from_date = 2018-04-16
+  to_date = 2021-01-01
+sqlite>
+```
+
 ## Ham callsign to Matrix room
 
 Used for getting ham radio callsigns to an IRC channel, by default
@@ -35,7 +79,7 @@ Requirements:
 Usage:
 
 1. Clone git repository https://github.com/OH6AD/koolit/ to somewhere. You may use `--bare` to save some space.
-2. Copy `config.example.ini` to `config.in`
+2. Copy `config.example.ini` to `config.ini`
 3. Edit `config.ini` and set repository path correctly
 4. Expose `public/` directory on your HTTP server
 
