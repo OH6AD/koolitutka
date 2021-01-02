@@ -54,7 +54,7 @@ function db_execute(&$stmt, $values = [], $error = "Database error") {
 $select_from_commit = $db->prepare('SELECT hash,authored FROM updates ORDER BY rowid DESC LIMIT 1');
 $insert_end_commit = $db->prepare('INSERT INTO updates VALUES (?,?)');
 $update_event = $db->prepare('UPDATE event SET to_date=:date WHERE callsign=:callsign AND status=:status AND to_date=:prev_date');
-$insert_event = $db->prepare('INSERT INTO event VALUES (:callsign,:status,:date,:date)');
+$insert_event = $db->prepare('INSERT INTO event VALUES (:callsign,:neighbour,:status,:date,:date)');
 $anomaly_bridge = $db->prepare("UPDATE event SET to_date=:date WHERE status != 'VOIMASSA' AND to_date=:prev_date");
 
 $from_result = db_execute($select_from_commit)->fetchArray();
@@ -133,7 +133,7 @@ while (TRUE) {
     // (e.g. OH6EYA) and the wildcard form (OH*EYA). If the states are
     // the same, then non-wildcard should not be stored.
     foreach ($table as $callsign => &$status) {
-        $wildcard = substr_replace($callsign,'*',2,1);
+        $wildcard = neighbour($callsign);
         if ($wildcard === $callsign) continue;
         if (!array_key_exists($wildcard, $table)) continue;
         if ($table[$wildcard] === NULL) continue;
@@ -166,6 +166,7 @@ while (TRUE) {
             'date' => $date,
             'callsign' => $callsign,
             'status' => $status,
+            'neighbour' => neighbour($callsign),
         ];
 
         // Trying to update callsign if it succeeds
@@ -224,4 +225,8 @@ function parse_line_hotfix($p, $r) {
     } else {
         return $ret;
     }
+}
+
+function neighbour($callsign) {
+    return substr_replace($callsign,'*',2,1);
 }
