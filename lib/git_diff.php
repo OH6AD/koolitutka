@@ -35,14 +35,14 @@ function date_to_commit($repo, $branch, $date) {
 }
 
 // Get handle to koolit list
-function open_koolit($repo, $version, $sort=false) {
+function open_koolit($repo, $version, $sort=FALSE) {
     $fds = [
         1 => ["pipe", "w"], // Get data via pipe
         2 => STDERR, // stderr passthrough
     ];
 
     $safe_object = escapeshellarg("$version:oh-callsigns.tsv");
-    $proc = proc_open("git cat-file -p $safe_object". (sort ? "|sort" : ""), $fds, $pipes, $repo);
+    $proc = proc_open("git cat-file -p $safe_object". ($sort ? "|sort" : ""), $fds, $pipes, $repo);
     return (object)["proc" => $proc, "pipe" => $pipes[1]];
 }
 
