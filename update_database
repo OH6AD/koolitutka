@@ -55,6 +55,7 @@ $select_from_commit = $db->prepare('SELECT hash,authored FROM updates ORDER BY r
 $insert_end_commit = $db->prepare('INSERT INTO updates VALUES (?,?)');
 $update_event = $db->prepare('UPDATE event SET to_date=:date WHERE callsign=:callsign AND status=:status AND to_date=:prev_date');
 $insert_event = $db->prepare('INSERT INTO event VALUES (:callsign,:status,:date,:date)');
+$anomaly_bridge = $db->prepare("UPDATE event SET to_date=:date WHERE status != 'VOIMASSA' AND to_date=:prev_date");
 
 $from_result = db_execute($select_from_commit)->fetchArray();
 $range = $from_result['hash'].'..'.$config->git->branch;
@@ -89,6 +90,7 @@ while (TRUE) {
     $table = [];
     $mangles = 0;
     $duplicates = 0;
+    $withdrawns = 0;
     while (TRUE) {
         $match = parse_line_hotfix($callsigns->pipe,'/^([^\t]*)\t([^\t]*)/');
         if ($match === FALSE) break; // All callsigns processed in a commit
@@ -121,6 +123,7 @@ while (TRUE) {
         // For statistics
         if ($state_a !== NULL) $duplicates++;
         if (array_key_exists('mangled', $match)) $mangles++;
+        if ($state_b === 'KARENSSI') $withdrawns++;
     }
     close_git($callsigns);
 
@@ -149,12 +152,23 @@ while (TRUE) {
         }
     }
 
+    if ($withdrawns === 0) {
+        // Anomaly in data between 2019-12-13 and 2019-12-21 when
+        // KARENSSI and VARAUS were completely missing. Filling the
+        // gap with best guess (=no changes during the period).
+        db_execute($anomaly_bridge, [
+            'prev_date' => $prev_date,
+            'date' => $date,
+        ]);
+        $bridged = $db->changes();
+    }
+    
     // Processing of a commit is ready. Updating commit pointer and
     // finishing transaction!
     db_execute($insert_end_commit, [$hash, $date]);
     $db->exec('END');
 
-    print("OK".($mangles === 0 ? '' : ", mangles: $mangles").($duplicates === 0 ? '' : ", duplicates: $duplicates")."\n");
+    print("OK".($mangles === 0 ? '' : ", mangles: $mangles").($duplicates === 0 ? '' : ", duplicates: $duplicates").($withdrawns === 0 ? ", gap fills: $bridged" : '')."\n");
 
     $prev_date = $date;
 }

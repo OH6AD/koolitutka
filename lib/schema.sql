@@ -10,6 +10,7 @@ CREATE TABLE event (
 
 CREATE INDEX ix_callsign_date ON event(callsign, from_date);
 CREATE INDEX ix_status_callsign ON event(status, callsign, to_date);
+CREATE INDEX ix_anomaly ON event(to_date, status);
 
 CREATE TABLE updates (
 	hash TEXT NOT NULL,
