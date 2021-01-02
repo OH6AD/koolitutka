@@ -2,10 +2,10 @@
 BEGIN;
 
 CREATE TABLE event (
-	callsign TEXT NOT NULL,
-	status TEXT NOT NULL,
-	from_date TEXT NOT NULL,
-	to_date TEXT NOT NULL
+	callsign TEXT NOT NULL,  -- Callsign, e.g. OH6DDR
+	status TEXT NOT NULL,    -- VARAUS / VOIMASSA / KARENSSI
+	from_date TEXT NOT NULL, -- Start date of this status
+	to_date TEXT NOT NULL    -- End date of this status
 );
 
 CREATE INDEX ix_callsign_date ON event(callsign, from_date);
