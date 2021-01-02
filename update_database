@@ -53,10 +53,12 @@ function db_execute(&$stmt, $values = [], $error = "Database error") {
 
 $select_from_commit = $db->prepare('SELECT hash,authored FROM updates ORDER BY rowid DESC LIMIT 1');
 $insert_end_commit = $db->prepare('INSERT INTO updates VALUES (?,?)');
-$update_event = $db->prepare('UPDATE event SET to_date=:date WHERE callsign=:callsign AND status=:status AND to_date=:prev_date');
-$insert_event = $db->prepare('INSERT INTO event VALUES (:callsign,:neighbour,:status,:date,:date)');
-$anomaly_bridge = $db->prepare("UPDATE event SET to_date=:date WHERE status != 'VOIMASSA' AND to_date=:prev_date");
-$anomaly2_bridge = $db->prepare("UPDATE event SET to_date=:date WHERE to_date=:prev_date");
+$mark_active_events = $db->prepare("UPDATE event SET to_date='Z' WHERE to_date IS NULL");
+$update_event = $db->prepare("UPDATE event SET to_date=NULL WHERE callsign=:callsign AND status=:status AND to_date='Z'");
+$insert_event = $db->prepare("INSERT INTO event (callsign, neighbour, status, from_date) VALUES (:callsign, :neighbour, :status, :date)");
+$anomaly_bridge = $db->prepare("UPDATE event SET to_date=NULL WHERE status != 'VOIMASSA' AND to_date='Z'");
+$anomaly2_bridge = $db->prepare("UPDATE event SET to_date=NULL WHERE to_date='Z'");
+$unmark_old_events = $db->prepare("UPDATE event SET to_date=:prev_date WHERE to_date='Z'");
 
 $from_result = db_execute($select_from_commit)->fetchArray();
 $range = $from_result['hash'].'..'.$config->git->branch;
@@ -154,6 +156,11 @@ while (TRUE) {
 
     // Now we have a cleaner data and we're ready populate the database
     $db->exec('BEGIN');
+
+    // Mark all current events temporarily. Unmarked at the end of the
+    // transaction.
+    db_execute($mark_active_events);
+
     $wildcard_duplicates = 0;
     foreach ($table as $callsign => $status) {
         // Skip if the call sign is marked as to be skipped
@@ -163,7 +170,6 @@ while (TRUE) {
         }
 
         $info = [
-            'prev_date' => $prev_date,
             'date' => $date,
             'callsign' => $callsign,
             'status' => $status,
@@ -190,25 +196,22 @@ while (TRUE) {
         // Anomaly in data between 2019-12-13 and 2019-12-21 when
         // KARENSSI and VARAUS were completely missing. Filling the
         // gap with a best guess (=no changes during the period).
-        db_execute($anomaly_bridge, [
-            'prev_date' => $prev_date,
-            'date' => $date,
-        ]);
+        db_execute($anomaly_bridge);
         $bridged = $db->changes();
     } else if ($hash === 'b3eb1095da9466af79503d39c72fdf89f6fab123') {
         // A bad back to the office day at Traficom after a refreshing
         // Christmas holiday in 2020-01-06 resulted in a tragicomic
         // erasure of many long timers from the callsign
         // database. This fix hides the trails.
-        db_execute($anomaly2_bridge, [
-            'prev_date' => $prev_date,
-            'date' => $date,
-        ]);
+        db_execute($anomaly2_bridge);
         $bridged = $db->changes();
     } else {
         $bridged = 0;
     }
-    
+
+    // Unmark expiring events
+    db_execute($unmark_old_events, ['prev_date' => $prev_date]);
+
     // Processing of a commit is ready. Updating commit pointer and
     // finishing transaction!
     db_execute($insert_end_commit, [$hash, $date]);
