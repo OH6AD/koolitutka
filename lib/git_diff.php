@@ -46,6 +46,32 @@ function open_koolit($repo, $version, $sort=FALSE) {
     return (object)["proc" => $proc, "pipe" => $pipes[1]];
 }
 
+// Get some history information of a given file on a given revision
+// range.
+function git_log($repo, $range, $file = NULL) {
+    $fds = [
+        1 => ["pipe", "w"], // Get data via pipe
+        2 => STDERR, // stderr passthrough
+    ];
+
+    $safe_range = escapeshellarg($range);
+    $safe_file = $file === NULL ? '' : ' -- '.escapeshellarg($file);
+    $cmd = "git log --reverse '--pretty=format:%H %at' $safe_range$safe_file";
+    $proc = proc_open($cmd, $fds, $pipes, $repo);
+    return (object)["proc" => $proc, "pipe" => $pipes[1]];
+}
+
+// Read line from handle and fit a regex to it. On EOF, FALSE is
+// returned. When no match, input string is returned. Otherwise, a
+// match array is returned.
+function parse_line($h, $regex) {
+    $str = fgets($h);
+    if ($str === FALSE) return FALSE;
+    preg_match($regex, $str, $matches);
+    if (empty($matches)) return $str;
+    return $matches;
+}
+
 // Read next active callsign from the handle
 function get_next_active($pipe) {
     while (true) {

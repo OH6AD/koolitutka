@@ -1,0 +1,128 @@
+#!/usr/bin/env php
+<?php
+
+error_reporting(E_ALL);
+require_once(__DIR__.'/lib/git_diff.php');
+
+// Parse config
+$config = parse_ini_file(__DIR__.'/config.ini', TRUE);
+if ($config === FALSE) {
+    print("No configuration file found\n");
+    exit(1);
+}
+$config = (object)$config;
+$config->git = (object)$config->git;
+$file = 'oh-callsigns.tsv';
+
+// Check if we need to create a database
+$init_db = !file_exists($config->database);
+
+// Connect database
+$db = new SQLite3($config->database);
+$db->busyTimeout(2000);
+$db->exec('PRAGMA journal_mode = wal');
+
+// Initialize database if needed
+if ($init_db) $db->exec(file_get_contents(__DIR__.'/lib/schema.sql'));
+
+// Executes given database query. Terminates in case of a database
+// error. When $error === NULL then errors are passed though to
+// caller.
+function db_execute(&$stmt, $values = [], $error = "Database error") {
+    global $db;
+
+    // Prepare statement for reuse
+    $stmt->reset();
+    
+    // Bind values
+    foreach ($values as $k=>$v) {
+        // Numeric indices start from 1, increment needed
+        if (!is_string($k)) $k++;
+        $stmt->bindValue($k, $v);
+    }
+
+    // Execute and check result
+    $ret = $stmt->execute();
+    if ($error !== NULL && $ret === FALSE) err($error);
+    return $ret;
+}
+
+$select_from_commit = $db->prepare('SELECT hash,authored FROM updates ORDER BY rowid DESC LIMIT 1');
+$insert_end_commit = $db->prepare('INSERT INTO updates VALUES (?,?)');
+$update_event = $db->prepare('UPDATE event SET to_date=:date WHERE callsign=:callsign AND status=:status AND to_date=:prev_date');
+$insert_event = $db->prepare('INSERT INTO event VALUES (:callsign,:status,:date,:date)');
+
+$from_result = db_execute($select_from_commit)->fetchArray();
+if ($from_result === FALSE) {
+    $range = $config->git->branch;
+    $prev_date = '';
+} else {
+    $range = $from_result['hash'].'..'.$config->git->branch;
+    $prev_date = $from_result['authored'];
+}
+
+// Update git
+if ($config->git->fetch) git_raw('git fetch', $config->git->repo);
+
+var_dump($range);
+var_dump($prev_date);
+
+// Iterating through commits
+$commits = git_log($config->git->repo, $range, $file);
+while (TRUE) {
+    $match = parse_line($commits->pipe, '/^([^ ]*) (.*)/');
+    if ($match === FALSE) break; // All commits processed
+    if (is_string($match)) {
+        print("Unable to parse version history line $match\n");
+        exit(1);
+    }
+
+    // Get hash and use the previous day as the date. The ministry
+    // updates the database the next morning (e.g. Friday data arrives
+    // on Saturday morning.
+    $hash = $match[1];
+    $ts = intval($match[2])-86400;
+    $date = strftime('%F', $ts);
+
+    var_dump($date);
+
+    // Process callsigns in that commit
+    $callsigns = open_koolit($config->git->repo, $hash);
+    $db->exec('BEGIN'); // Every commit is a transaction
+    while (TRUE) {
+        $match = parse_line($callsigns->pipe,'/^([^\t]*)\t([^\t]*)/');
+        if ($match === FALSE) break; // All callsigns processed in a commit
+        if (is_string($match)) {
+            print("Unable to match callsign $match in $hash\n");
+            exit(2);
+        }
+        $info = [
+            'prev_date' => $prev_date,
+            'date' => $date,
+            'callsign' => $match[1],
+            'status' => $match[2],
+        ];
+
+        // Trying to update callsign if it succeeds
+        db_execute($update_event, $info);
+        switch ($db->changes()) {
+        case 0: // Callsign state was changed
+            db_execute($insert_event, $info);
+            break;
+        case 1: // No change on callsign, just extended for this date
+            break;
+        default: // Schlecht!
+            print("BAD STATE CHANGE!\n");
+            print_r($info);
+            exit(3);
+        }
+    }
+    // Processing of a commit is ready, committing transaction!
+    db_execute($insert_end_commit, [$hash, $date]);
+    $db->exec('END');
+
+    close_git($callsigns);
+    $prev_date = $date;
+}
+
+close_git($commits);
