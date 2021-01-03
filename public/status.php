@@ -20,9 +20,10 @@ $db->busyTimeout(2000);
 $db->exec('PRAGMA journal_mode = wal');
 
 $out = [
-    'updated' => $db->querySingle("select authored from updates order by rowid desc limit 1"),
-    'callsigns' => $db->querySingle("select count(distinct callsign) from event"),
-    'active' => $db->querySingle("select count(distinct callsign) from event where to_date='NOW' and status='VOIMASSA'"),
+    'genesis' => $db->querySingle("SELECT authored FROM updates ORDER BY rowid ASC LIMIT 1 OFFSET 1"),
+    'updated' => $db->querySingle("SELECT authored FROM updates ORDER BY rowid DESC LIMIT 1"),
+    'callsigns' => $db->querySingle("SELECT COUNT(DISTINCT callsign) FROM event"),
+    'active' => $db->querySingle("SELECT COUNT(DISTINCT callsign) FROM event WHERE to_date='NOW' AND status='VOIMASSA'"),
 ];
 
 header('Content-Type: application/json; charset=UTF-8');
