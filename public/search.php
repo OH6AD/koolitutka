@@ -24,7 +24,7 @@ $max = 5;
 $query_n = $db->prepare("SELECT COUNT(DISTINCT callsign) FROM event WHERE callsign BETWEEN :start and :end");
 $query = $db->prepare("SELECT callsign,status,to_date FROM event WHERE callsign BETWEEN :start and :end ORDER BY callsign ASC, to_date DESC");
 
-$start = $_GET['q'] ?? $argv[1] ?? '';
+$start = strtoupper($_GET['q'] ?? $argv[1] ?? '');
 
 $range = [
     'start' => $start,
