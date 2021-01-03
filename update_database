@@ -88,6 +88,12 @@ while (TRUE) {
     $ts = intval($match[2])-86400;
     $date = strftime('%F', $ts);
 
+    // Determine if using previous commit date or one day before the
+    // $date. Sometimes we have two commits per day which needs to be
+    // handled properly. Taking the newer of the options.
+    $prev_date_b = strftime('%F', $ts-86400);
+    if (strcmp($prev_date, $prev_date_b) < 0) $prev_date = $prev_date_b;
+
     printf("Processing $date... ");
 
     // Collect call signs in that commit
