@@ -21,3 +21,7 @@ function db_execute(&$stmt, $values = [], $error = "Database error") {
     if ($error !== NULL && $ret === FALSE) err($error);
     return $ret;
 }
+
+function neighbour($callsign) {
+    return substr_replace($callsign,'*',2,1);
+}

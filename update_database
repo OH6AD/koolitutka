@@ -230,7 +230,3 @@ function parse_line_hotfix($p, $r) {
         return $ret;
     }
 }
-
-function neighbour($callsign) {
-    return substr_replace($callsign,'*',2,1);
-}
