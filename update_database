@@ -2,6 +2,7 @@
 <?php
 
 error_reporting(E_ALL);
+require_once(__DIR__.'/lib/db.php');
 require_once(__DIR__.'/lib/git_diff.php');
 
 // Parse config
@@ -27,28 +28,6 @@ if ($init_db) {
     print("Creating database... ");
     $db->exec(file_get_contents(__DIR__.'/lib/schema.sql'));
     print("OK\n");
-}
-
-// Executes given database query. Terminates in case of a database
-// error. When $error === NULL then errors are passed though to
-// caller.
-function db_execute(&$stmt, $values = [], $error = "Database error") {
-    global $db;
-
-    // Prepare statement for reuse
-    $stmt->reset();
-    
-    // Bind values
-    foreach ($values as $k=>$v) {
-        // Numeric indices start from 1, increment needed
-        if (!is_string($k)) $k++;
-        $stmt->bindValue($k, $v);
-    }
-
-    // Execute and check result
-    $ret = $stmt->execute();
-    if ($error !== NULL && $ret === FALSE) err($error);
-    return $ret;
 }
 
 // Statements. TMP is a temporary value which must be cleaned before
