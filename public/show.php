@@ -63,7 +63,12 @@ if ($out['now'] === null) {
         'callsign' => $callsign,
         'status' => 'VAPAA',
     ];
-    if (isset($history_end)) $out['now']['from_date'] = $history_end;
+    if (isset($history_end)) {
+        $one_day = new DateInterval('P1D');
+        $date = DateTime::createFromFormat('Y-m-d', $history_end);
+        $date->add($one_day);
+        $out['now']['from_date'] = $date->format('Y-m-d');
+    }
 }
 
 header('Content-Type: application/json; charset=UTF-8');
