@@ -56,9 +56,16 @@ while (($row = $result->fetchArray()) !== FALSE) {
 // Combine prefixes to a string
 foreach ($prefixes as $prefix => &$chars) {
     $list = array_keys($chars);
-    $chars = implode($list);
+    // Improve compressibility by reverse-sorting the array :D gzip magic.
+    sort($list);
+    $chars = strrev(implode($list));
 }
 
+
+// Improve compressibility by sorting the prefixes from the end
+uksort($prefixes, function ($a, $b) {
+    return strcmp(reverserator($b), reverserator($a));
+});
 $out['prefixes'] = $prefixes;
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -73,4 +80,11 @@ function populate(&$prefixes, $left) {
         $left = substr($left, 0, -1); // Strip last char
         $prefixes[$left][$right] = true;
     }
+}
+
+function reverserator($a) {
+    // Just for improving comression, not scientifically proven
+    $pad = "             ";
+    $padded = substr($a . $pad, 0, strlen($pad));
+    return strrev($padded);
 }
