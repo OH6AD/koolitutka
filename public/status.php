@@ -19,7 +19,7 @@ $db = new SQLite3($config->database);
 $db->busyTimeout(2000);
 $db->exec('PRAGMA journal_mode = wal');
 
-$query = $db->prepare("SELECT callsign, to_date FROM event");
+$query = $db->prepare("SELECT callsign, status, to_date FROM event");
 
 $out = [
     'genesis' => $db->querySingle("SELECT authored FROM updates ORDER BY rowid ASC LIMIT 1 OFFSET 1"),
@@ -33,17 +33,20 @@ $prefixes = [];
 $result = db_execute($query);
 while (($row = $result->fetchArray()) !== FALSE) {
     $callsign = $row['callsign'];
+
+    // If the callsign has never been active in the history and not in
+    // any state now, do not bother to add it. That callsign hasn't
+    // changed the "world state".
+    if ($row['to_date'] !== 'NOW' && $row['status'] !== 'VOIMASSA') continue;
+    
     if ($callsign[2] === '*') {
-        // Catch-all case (KARENSSI or similar) which is still active
-        // is appended to list of all prefixes. Expired ones are
-        // ignored.
-        if ($row['to_date'] === 'NOW') {
-            $prefix = substr($callsign, 0, 2);
-            $suffix = substr($callsign, 3);
-            $aliases = [];
-            for ($i = 0; $i<10; $i++) {
-                populate($prefixes, $prefix . $i . $suffix);
-            }
+        // Wildcard cases are added to the list by adding all the
+        // number options to the list
+        $prefix = substr($callsign, 0, 2);
+        $suffix = substr($callsign, 3);
+        $aliases = [];
+        for ($i = 0; $i<10; $i++) {
+            populate($prefixes, $prefix . $i . $suffix);
         }
     } else {
         populate($prefixes, $callsign);
@@ -62,7 +65,9 @@ header('Content-Type: application/json; charset=UTF-8');
 print(json_encode($out)."\n");
 
 function populate(&$prefixes, $left) {
-    $prefixes[$left][":"] = true;
+    // Colon means it is a complete call sign
+    $prefixes[$left][':'] = true;
+    // And populate all the prefixes
     while ($left !== '') {
         $right = $left[-1];
         $left = substr($left, 0, -1); // Strip last char
