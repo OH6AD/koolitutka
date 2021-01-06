@@ -89,7 +89,7 @@ while (TRUE) {
             print("Unable to match callsign $match in $hash\n");
             exit(2);
         }
-        // Call sign OH73WR has had extra space after it since
+        // Call sign OG73WR has had extra space after it since
         // 2019-12-13. Not fatal, but storing the incident.
         if ($match[2] !== "\t") $whitespaces++;
 
