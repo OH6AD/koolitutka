@@ -204,13 +204,24 @@ while (TRUE) {
     db_execute($insert_end_commit, [$hash, $date]);
     $db->exec('END');
 
-    print("OK".($mangles === 0 ? '' : ", mangles: $mangles").($duplicates === 0 ? '' : ", duplicates: $duplicates").($bridged === 0 ? '' : ", gap fills: $bridged").($wildcard_duplicates === 0 ? '' : ", wildcard duplicates: $wildcard_duplicates")."\n");
+    print("OK".
+          report("mangles",$mangles).
+          report("duplicates",$duplicates).
+          report("gap fills",$bridged).
+          report("wildcard duplicates", $wildcard_duplicates).
+          "\n");
 
     $prev_date = $date;
 }
 
 close_git($commits);
 printf("Complete!\n");
+
+// Produces non-empty string with a value if the value is non-zero.
+function report($name, $value) {
+    if ($value === 0) return '';
+    return ", $name: $value";
+}   
 
 // Fixes some problems Traficom and its predecessor Ficora had in
 // their data.
