@@ -81,20 +81,24 @@ while (TRUE) {
     $mangles = 0;
     $duplicates = 0;
     $withdrawns = 0;
+    $whitespaces = 0;
     while (TRUE) {
-        $match = parse_line_hotfix($callsigns->pipe,'/^([^\t]*)\t([^\t]*)/');
+        $match = parse_line_hotfix($callsigns->pipe,'/^([*\/0-9A-Z]*)([ \t]*)(VOIMAS(SA)?|VARAUS|KARENSSI)\t\r$/');
         if ($match === FALSE) break; // All callsigns processed in a commit
         if (is_string($match)) {
             print("Unable to match callsign $match in $hash\n");
             exit(2);
         }
+        // Call sign OH73WR has had extra space after it since
+        // 2019-12-13. Not fatal, but storing the incident.
+        if ($match[2] !== "\t") $whitespaces++;
 
         // Many callsigns have duplicates in the daily list. For that
         // reason we populate the list first, having precedence on
         // call signs which are in VOIMASSA state.
         $callsign = $match[1];
         $state_a = @$table[$callsign];
-        $state_b = $match[2];
+        $state_b = $match[3];
         if ($state_a === "VOIMASSA" || $state_b === "VOIMAS" || $state_b === "VOIMASSA") {
             // Voimassa (in effect) is the strongest state). Also, the
             // ministry changed "VOIMAS" to "VOIMASSA" in 2019-12-14,
@@ -209,6 +213,7 @@ while (TRUE) {
           report("duplicates",$duplicates).
           report("gap fills",$bridged).
           report("wildcard duplicates", $wildcard_duplicates).
+          report("whitespaces", $whitespaces).
           "\n");
 
     $prev_date = $date;
