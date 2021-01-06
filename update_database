@@ -224,8 +224,10 @@ function parse_line_hotfix($p, $r) {
         $out = parse_line($p, $r, $head);
         if (is_array($out)) {
             $out['mangled'] = TRUE;
+            return $out;
+        } else {
+            return $ret.$out;
         }
-        return $out;
     } else {
         return $ret;
     }
