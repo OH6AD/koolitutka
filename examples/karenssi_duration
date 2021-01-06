@@ -1,0 +1,16 @@
+#!/bin/sh -eu
+#
+# Example about getting KARENSSI durations of all calls in KARENSSI
+# after genesis of the database.
+#
+# To get a histogram: ./karenssi_duration DATABASE_FILE | cut -c1-3 | uniq -c
+
+test $# -eq 1 && test -f "$1" || {
+    echo Usage: $0 DATABASE_FILE >&2
+    exit 1
+}
+
+sqlite3 "$1" '.mode tabs' "select callsign,from_date,to_date from event where status='KARENSSI' and from_date>'2016-04-22' and to_date!='NOW'" | while read -r call from to; do
+    julians=$(((`date -d$to +%s` - `date -d$from +%s`)/86400))
+    printf "%03d %-10s %s %s\n" $julians $call $from $to 
+done | sort
