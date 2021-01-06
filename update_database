@@ -6,10 +6,10 @@ require_once(__DIR__.'/lib/db.php');
 require_once(__DIR__.'/lib/git_diff.php');
 
 // Parse config
-$config = parse_ini_file(__DIR__.'/config.ini', TRUE);
+$config_file = __DIR__.'/config.ini';
+$config = parse_ini_file($config_file, TRUE);
 if ($config === FALSE) {
-    print("No configuration file found\n");
-    exit(1);
+    err("No configuration file found at $config_file", 1);
 }
 $config = (object)$config;
 $config->git = (object)$config->git;
@@ -56,8 +56,7 @@ while (TRUE) {
     $match = parse_line($commits->pipe, '/^([^ ]*) (.*)/');
     if ($match === FALSE) break; // All commits processed
     if (is_string($match)) {
-        print("Unable to parse version history line $match\n");
-        exit(1);
+        err("Unable to parse version history line $match", 1);
     }
 
     // Get hash and use the previous day as the date. The ministry
@@ -86,8 +85,7 @@ while (TRUE) {
         $match = parse_line_hotfix($callsigns->pipe,'/^([*\/0-9A-Z]*)([ \t]*)(VOIMAS(SA)?|VARAUS|KARENSSI)\t\r$/');
         if ($match === FALSE) break; // All callsigns processed in a commit
         if (is_string($match)) {
-            print("Unable to match callsign $match in $hash\n");
-            exit(2);
+            err("Unable to match callsign $match in $hash", 2);
         }
         // Call sign OG73WR has had extra space after it since
         // 2019-12-13. Not fatal, but storing the incident.
@@ -110,8 +108,7 @@ while (TRUE) {
         } else {
             // If we hit here, the script needs to be expanded to
             // handle such state transformation.
-            print("Unhandled duplicate state in $hash callsign $callsign: $state_a -> $state_b\n");
-            exit(3);
+            err("Unhandled duplicate state in $hash callsign $callsign: $state_a -> $state_b", 3);
         }
 
         // For statistics
@@ -140,8 +137,7 @@ while (TRUE) {
             // Only do it if states match, keep the wildcard one and throw this away
             $status = NULL;
         } else {
-            printf("Invalid duplicate state in $hash callsigns $callsign is $status but $wildcard is {$table[$wildcard]}\n");
-            exit(3);
+            err("Invalid duplicate state in $hash callsigns $callsign is $status but $wildcard is {$table[$wildcard]}", 3);
         }
     }
 
@@ -176,9 +172,8 @@ while (TRUE) {
         case 1: // No change on callsign, just extended for this date
             break;
         default: // Schlecht!
-            print("Bad state change in commit $hash\n");
             print_r($info);
-            exit(3);
+            err("Bad state change in commit $hash",3);
         }
     }
 

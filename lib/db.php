@@ -22,6 +22,11 @@ function db_execute(&$stmt, $values = [], $error = "Database error") {
     return $ret;
 }
 
+function err($msg, $code=1) {
+    error_log($msg);
+    exit($code);
+}
+
 function neighbour($callsign) {
     return substr_replace($callsign,'*',2,1);
 }
