@@ -36,7 +36,7 @@ $result = db_execute($query, [$neighbour]);
 
 while (($row = $result->fetchArray(SQLITE3_ASSOC)) !== FALSE) {
     // Nullify genesis and current to make it more jsonish
-    if ($row['from_date'] === $out['genesis']) {
+    if ($row['from_date'] === null) {
         unset($row['from_date']);
     }
     if ($row['to_date'] === 'NOW') {

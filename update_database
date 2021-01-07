@@ -43,7 +43,8 @@ $unmark_old_events = $db->prepare("UPDATE event SET to_date=:prev_date WHERE to_
 
 // Get the previous commit or feed it with genesis commit
 $from_result = db_execute($select_from_commit)->fetchArray();
-if ($from_result == false) $from_result = [
+$genesis = $from_result === false;
+if ($genesis) $from_result = [
     'hash'     => 'bc9d5424fa0f3c5afb1bbcf33249ec7e09432320',
     'authored' => null,
 ];
@@ -54,7 +55,7 @@ $prev_date = $from_result['authored'];
 // Update git
 if ($config->git->fetch) git_raw('git fetch', $config->git->repo);
 
-if($prev_date) printf("Resuming from $prev_date.\n");
+if(!$genesis) printf("Resuming from $prev_date\n");
 
 // Iterating through commits
 $commits = git_log($config->git->repo, $range, $file);
@@ -163,7 +164,7 @@ while (TRUE) {
         }
 
         $info = [
-            'date' => $date,
+            'date' => $genesis ? null : $date,
             'callsign' => $callsign,
             'status' => $status,
             'neighbour' => neighbour($callsign),
