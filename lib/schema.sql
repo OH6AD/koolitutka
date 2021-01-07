@@ -22,7 +22,4 @@ CREATE TABLE updates (
 	authored TEXT NOT NULL -- Date of the data
 );
 
--- Genesis commit
-INSERT INTO updates VALUES ('bc9d5424fa0f3c5afb1bbcf33249ec7e09432320','');
-
 END;

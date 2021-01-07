@@ -41,14 +41,20 @@ $anomaly_bridge = $db->prepare("UPDATE event SET to_date='NOW' WHERE status != '
 $anomaly2_bridge = $db->prepare("UPDATE event SET to_date='NOW' WHERE to_date='TMP'");
 $unmark_old_events = $db->prepare("UPDATE event SET to_date=:prev_date WHERE to_date='TMP'");
 
+// Get the previous commit or feed it with genesis commit
 $from_result = db_execute($select_from_commit)->fetchArray();
+if ($from_result == false) $from_result = [
+    'hash'     => 'bc9d5424fa0f3c5afb1bbcf33249ec7e09432320',
+    'authored' => null,
+];
+
 $range = $from_result['hash'].'..'.$config->git->branch;
 $prev_date = $from_result['authored'];
 
 // Update git
 if ($config->git->fetch) git_raw('git fetch', $config->git->repo);
 
-if($prev_date !== '') printf("Resuming from $prev_date.\n");
+if($prev_date) printf("Resuming from $prev_date.\n");
 
 // Iterating through commits
 $commits = git_log($config->git->repo, $range, $file);
@@ -70,7 +76,7 @@ while (TRUE) {
     // $date. Sometimes we have two commits per day which needs to be
     // handled properly. Taking the newer of the options.
     $prev_date_b = strftime('%F', $ts-86400);
-    if (strcmp($prev_date, $prev_date_b) < 0) $prev_date = $prev_date_b;
+    if (strcmp($prev_date, $prev_date_b) <= 0) $prev_date = $prev_date_b;
 
     printf("Processing $date... ");
 

@@ -22,7 +22,7 @@ $db->exec('PRAGMA journal_mode = wal');
 $query = $db->prepare("SELECT callsign, status, to_date FROM event");
 
 $out = [
-    'genesis' => $db->querySingle("SELECT authored FROM updates ORDER BY rowid ASC LIMIT 1 OFFSET 1"),
+    'genesis' => $db->querySingle("SELECT authored FROM updates ORDER BY rowid ASC LIMIT 1"),
     'updated' => $db->querySingle("SELECT authored FROM updates ORDER BY rowid DESC LIMIT 1"),
     'callsigns' => $db->querySingle("SELECT COUNT(DISTINCT callsign) FROM event"),
     'active' => $db->querySingle("SELECT COUNT(DISTINCT callsign) FROM event WHERE to_date='NOW' AND status='VOIMASSA'"),

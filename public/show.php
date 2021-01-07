@@ -28,7 +28,7 @@ $out = [
     'now'     => null,
     'history' => [],
     'related' => [],
-    'genesis' => $db->querySingle("SELECT authored FROM updates ORDER BY rowid ASC LIMIT 1 OFFSET 1"),
+    'genesis' => $db->querySingle("SELECT authored FROM updates ORDER BY rowid ASC LIMIT 1"),
     'current' => $db->querySingle("SELECT authored FROM updates ORDER BY rowid DESC LIMIT 1"),
 ];
 
