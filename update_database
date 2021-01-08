@@ -126,13 +126,16 @@ while (TRUE) {
     close_git($callsigns);
 
     // Wildcard duplicate detection. It is another fault in the
-    // original data when a call sign is withdrawn. For about one
-    // month, the call sign is reserved both as its full form
-    // (e.g. OH6EYA) and the wildcard form (OH*EYA). If the states are
-    // the same, then non-wildcard should not be stored.
+    // original data when a call sign is withdrawn. Before 2019-12-13
+    // the call sign was reserved both as its full form (e.g. OH6EYA)
+    // and the wildcard form (OH*EYA). If the states are the same,
+    // then non-wildcard should not be stored.
     foreach ($table as $callsign => &$status) {
         $wildcard = neighbour($callsign);
+        // Do not clean a wildcard
         if ($wildcard === $callsign) continue;
+        // Do not clean if there is no wildcard callsign or it has
+        // been already cleaned up.
         if (!array_key_exists($wildcard, $table)) continue;
         if ($table[$wildcard] === NULL) continue;
 
