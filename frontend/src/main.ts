@@ -191,7 +191,7 @@ function renderLookup(result: LookupResult): string {
       </article>
       <article>
         <h2>${t.related}</h2>
-        ${renderEventsTable(result.related)}
+        ${renderEventsTable(result.related, true)}
       </article>
     </section>
   `;
@@ -203,7 +203,7 @@ function renderNoHistoryNotice(result: LookupResult): string {
   return `<p class="status-note">${t.noHistoryNotice} <a href="${VALIDITY_RULES_URL}" target="_blank" rel="noopener noreferrer">${t.validityRules}</a>.</p>`;
 }
 
-function renderEventsTable(rows: EventRow[]): string {
+function renderEventsTable(rows: EventRow[], linkCallsigns = false): string {
   const t = messages(language);
   if (rows.length === 0) return `<p class="empty">${t.noRows}</p>`;
   return `
@@ -212,7 +212,7 @@ function renderEventsTable(rows: EventRow[]): string {
         <thead><tr><th>${t.callsign}</th><th>${t.status}</th><th>${t.startDate}</th><th>${t.endDate}</th></tr></thead>
         <tbody>${rows.map((row) => `
           <tr>
-            <td>${row.callsign}</td>
+            <td>${renderCallsignCell(row.callsign, linkCallsigns)}</td>
             <td>${statusText(row.status)}</td>
             <td>${displayStart(row)}</td>
             <td>${displayEnd(row)}</td>
@@ -220,6 +220,11 @@ function renderEventsTable(rows: EventRow[]): string {
       </table>
     </div>
   `;
+}
+
+function renderCallsignCell(callsign: string, linked: boolean): string {
+  if (!linked) return callsign;
+  return `<a class="callsign-link" href="${callsignHash(callsign)}">${callsign}</a>`;
 }
 
 function renderChanges(rows: ChangeRow[]): string {
