@@ -12,7 +12,14 @@ function git_raw($cmd, $cwd) {
     ];
 
     $proc = proc_open($cmd, $fds, $pipes, $cwd);
-    proc_close($proc);
+    if ($proc === false) {
+        throw new RuntimeException("Unable to execute command: ".$cmd." (working directory: ".$cwd.")");
+    }
+
+    $status = proc_close($proc);
+    if ($status !== 0) {
+        throw new RuntimeException("Command failed with status ".$status.": ".$cmd, $status);
+    }
 }
 
 // Get the commit hash of most recent commit at the given

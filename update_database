@@ -53,7 +53,13 @@ $range = $from_result['hash'].'..'.$config->git->branch;
 $prev_date = $from_result['authored'];
 
 // Update git
-if ($config->git->fetch) git_raw('git fetch', $config->git->repo);
+if ($config->git->fetch) {
+    try {
+        git_raw('git fetch', $config->git->repo);
+    } catch (RuntimeException $e) {
+        err('Unable to update git repository: '.$e->getMessage(), 1);
+    }
+}
 
 if(!$genesis) printf("Resuming from $prev_date\n");
 
