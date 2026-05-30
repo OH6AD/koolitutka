@@ -181,10 +181,11 @@ function renderChanges(rows: ChangeRow[]): string {
   return `
     <div class="table-wrap">
       <table>
-        <thead><tr><th>${t.change}</th><th>${t.callsign}</th><th>${t.status}</th><th>${t.startDate}</th><th>${t.endDate}</th><th>${t.duration}</th></tr></thead>
+        <thead><tr><th>${t.date}</th><th>${t.change}</th><th>${t.callsign}</th><th>${t.status}</th><th>${t.startDate}</th><th>${t.endDate}</th><th>${t.duration}</th></tr></thead>
         <tbody>${rows.map((row) => `
           <tr>
-            <td>${row.change_date} ${row.change_type === 'start' ? t.started : t.ended}</td>
+            <td>${row.change_date}</td>
+            <td>${row.change_type === 'start' ? t.started : t.ended}</td>
             <td>${row.callsign}</td>
             <td>${statusText(row.status)}</td>
             <td>${displayStart(row)}</td>
