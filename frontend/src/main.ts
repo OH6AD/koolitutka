@@ -3,13 +3,18 @@ import { DbClient } from './dbClient';
 import { daysAgoIso, daysBetween, formatDuration, todayIso } from './date';
 import { formatMessage, languages, messages, pickLanguage } from './i18n';
 import { normalizeCallsign } from './callsign';
+import { buildRouteHash, parseRouteHash } from './route';
 import type { ChangeRow, EventRow, Language, LookupResult, Metadata, Status } from './types';
 
 const db = new DbClient();
+const initialRoute = parseRouteHash(location.hash);
 const savedLanguage = localStorage.getItem('language');
-let language: Language = savedLanguage && languages.includes(savedLanguage as Language)
-  ? savedLanguage as Language
-  : pickLanguage(navigator.languages);
+let language: Language = initialRoute.language
+  ?? (savedLanguage && languages.includes(savedLanguage as Language) ? savedLanguage as Language : null)
+  ?? pickLanguage(navigator.languages);
+let dateStart = initialRoute.start ?? daysAgoIso(7);
+let dateEnd = initialRoute.end ?? todayIso();
+let pendingLookup = initialRoute.q;
 let metadata: Metadata | null = null;
 let lastLookup: LookupResult | null = null;
 let changes: ChangeRow[] = [];
@@ -19,12 +24,17 @@ let error: string | null = null;
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Missing app root');
 
+window.addEventListener('hashchange', () => {
+  applyHash(location.hash);
+});
+
 render();
 db.init('/koolitutka.sqlite')
   .then((data) => {
     metadata = data;
     isLoading = false;
-    return loadChanges();
+    syncRoute();
+    return applyRouteState();
   })
   .catch((reason) => {
     isLoading = false;
@@ -69,8 +79,8 @@ function render(): void {
         <div class="section-header">
           <h2>${t.changes}</h2>
           <form id="changes-form" class="date-form">
-            <label>${t.from}<input type="date" id="start-date" value="${dateInput('start-date', daysAgoIso(7))}" /></label>
-            <label>${t.to}<input type="date" id="end-date" value="${dateInput('end-date', todayIso())}" /></label>
+            <label>${t.from}<input type="date" id="start-date" value="${dateStart}" /></label>
+            <label>${t.to}<input type="date" id="end-date" value="${dateEnd}" /></label>
             <button type="submit">${t.update}</button>
           </form>
         </div>
@@ -85,6 +95,7 @@ function bindEvents(): void {
   document.querySelector<HTMLSelectElement>('#language-select')?.addEventListener('change', (event) => {
     language = (event.currentTarget as HTMLSelectElement).value as Language;
     localStorage.setItem('language', language);
+    syncRoute();
     render();
   });
 
@@ -93,8 +104,8 @@ function bindEvents(): void {
     const input = document.querySelector<HTMLInputElement>('#callsign');
     const callsign = normalizeCallsign(input?.value ?? '');
     if (callsign.length === 0) return;
-    db.lookupCallsign(callsign).then((result) => {
-      lastLookup = result;
+    lookupCallsign(callsign).then(() => {
+      syncRoute();
       render();
     }).catch(showError);
   });
@@ -120,13 +131,18 @@ function bindEvents(): void {
 
   document.querySelector<HTMLFormElement>('#changes-form')?.addEventListener('submit', (event) => {
     event.preventDefault();
+    dateStart = document.querySelector<HTMLInputElement>('#start-date')?.value || dateStart;
+    dateEnd = document.querySelector<HTMLInputElement>('#end-date')?.value || dateEnd;
+    syncRoute();
     loadChanges().catch(showError);
   });
 
   document.querySelector<HTMLButtonElement>('#close-lookup')?.addEventListener('click', () => {
     lastLookup = null;
+    pendingLookup = null;
     const input = document.querySelector<HTMLInputElement>('#callsign');
     if (input) input.value = '';
+    syncRoute();
     render();
   });
 }
@@ -198,9 +214,7 @@ function renderChanges(rows: ChangeRow[]): string {
 }
 
 function loadChanges(): Promise<void> {
-  const start = dateInput('start-date', daysAgoIso(7));
-  const end = dateInput('end-date', todayIso());
-  return db.listChanges(start, end).then((rows) => {
+  return db.listChanges(dateStart, dateEnd).then((rows) => {
     changes = rows;
     render();
   });
@@ -217,8 +231,36 @@ function renderCurrentDates(current: { from_date: string | null; from_date_estim
   return rows.join('');
 }
 
-function dateInput(id: string, fallback: string): string {
-  return document.querySelector<HTMLInputElement>(`#${id}`)?.value || fallback;
+function lookupCallsign(callsign: string): Promise<void> {
+  pendingLookup = callsign;
+  return db.lookupCallsign(callsign).then((result) => {
+    lastLookup = result;
+  });
+}
+
+function applyRouteState(): Promise<void> {
+  return loadChanges().then(() => {
+    if (pendingLookup === null) {
+      lastLookup = null;
+      render();
+      return;
+    }
+    return lookupCallsign(pendingLookup).then(render);
+  });
+}
+
+function syncRoute(): void {
+  const hash = buildRouteHash({ q: lastLookup?.callsign ?? pendingLookup, start: dateStart, end: dateEnd, language });
+  if (location.hash !== hash) history.replaceState(null, '', hash);
+}
+
+function applyHash(hash: string): void {
+  const route = parseRouteHash(hash);
+  language = route.language ?? language;
+  dateStart = route.start ?? daysAgoIso(7);
+  dateEnd = route.end ?? todayIso();
+  pendingLookup = route.q;
+  applyRouteState().catch(showError);
 }
 
 function displayStart(row: { from_date: string | null; from_date_estimated?: boolean }): string {
