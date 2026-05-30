@@ -14,6 +14,7 @@ if ($config === FALSE) {
 $config = (object)$config;
 $config->git = (object)$config->git;
 $file = 'oh-callsigns.tsv';
+const SCHEMA_VERSION = 2;
 
 // Check if we need to create a database
 $init_db = !file_exists($config->database);
@@ -25,9 +26,14 @@ $db->exec('PRAGMA journal_mode = wal');
 
 // Initialize database if needed
 if ($init_db) {
-    print("Creating database... ");
-    $db->exec(file_get_contents(__DIR__.'/lib/schema.sql'));
-    print("OK\n");
+    apply_schema("Creating database... ");
+} else {
+    $schema_version = database_schema_version();
+    if ($schema_version < SCHEMA_VERSION) {
+        apply_schema("Updating database schema to version ".SCHEMA_VERSION."... ");
+    } else if ($schema_version > SCHEMA_VERSION) {
+        err("Database schema version $schema_version is newer than supported version ".SCHEMA_VERSION);
+    }
 }
 
 // Statements. TMP is a temporary value which must be cleaned before
@@ -36,7 +42,7 @@ $select_from_commit = $db->prepare('SELECT hash,authored FROM updates ORDER BY r
 $insert_end_commit = $db->prepare('INSERT INTO updates VALUES (?,?)');
 $mark_active_events = $db->prepare("UPDATE event SET to_date='TMP' WHERE to_date='NOW'");
 $update_event = $db->prepare("UPDATE event SET to_date='NOW' WHERE callsign=:callsign AND status=:status AND to_date='TMP'");
-$insert_event = $db->prepare("INSERT INTO event VALUES (:callsign, :neighbour, :status, :date, 'NOW')");
+$insert_event = $db->prepare("INSERT INTO event VALUES (:callsign, :neighbour, :is_wildcard, :status, :date, 'NOW')");
 $anomaly_bridge = $db->prepare("UPDATE event SET to_date='NOW' WHERE status != 'VOIMASSA' AND to_date='TMP'");
 $anomaly2_bridge = $db->prepare("UPDATE event SET to_date='NOW' WHERE to_date='TMP'");
 $unmark_old_events = $db->prepare("UPDATE event SET to_date=:prev_date WHERE to_date='TMP'");
@@ -177,6 +183,7 @@ while (TRUE) {
             'callsign' => $callsign,
             'status' => $status,
             'neighbour' => neighbour($callsign),
+            'is_wildcard' => strpos($callsign, '*') === false ? 0 : 1,
         ];
 
         // Trying to update callsign if it succeeds
@@ -232,6 +239,22 @@ while (TRUE) {
 
 close_git($commits);
 printf("Complete!\n");
+
+function apply_schema($message) {
+    global $db;
+
+    print($message);
+    if (!$db->exec(file_get_contents(__DIR__."/lib/schema.sql"))) {
+        err("Unable to apply database schema: ".$db->lastErrorMsg());
+    }
+    print("OK\n");
+}
+
+function database_schema_version() {
+    global $db;
+
+    return intval($db->querySingle("PRAGMA user_version"));
+}
 
 // Produces non-empty string with a value if the value is non-zero.
 function report($name, $value) {
