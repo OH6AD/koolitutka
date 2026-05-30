@@ -113,6 +113,8 @@ button {
 table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
 th, td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 th { color: var(--muted); font-weight: 600; }
+.callsign-link { color: var(--accent); font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.callsign-link:hover { color: #0f4e6c; }
 .notice { margin: 12px 0; padding: 12px 14px; border-radius: 6px; background: #e8f1f5; }
 .notice.error { background: #fae8ea; color: #842334; }
 

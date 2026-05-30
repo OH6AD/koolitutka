@@ -202,7 +202,7 @@ function renderChanges(rows: ChangeRow[]): string {
           <tr>
             <td>${row.change_date}</td>
             <td>${row.change_type === 'start' ? t.started : t.ended}</td>
-            <td>${row.callsign}</td>
+            <td><a class="callsign-link" href="${callsignHash(row.callsign)}">${row.callsign}</a></td>
             <td>${statusText(row.status)}</td>
             <td>${displayStart(row)}</td>
             <td>${displayEnd(row)}</td>
@@ -247,6 +247,10 @@ function applyRouteState(): Promise<void> {
     }
     return lookupCallsign(pendingLookup).then(render);
   });
+}
+
+function callsignHash(callsign: string): string {
+  return buildRouteHash({ q: callsign, start: dateStart, end: dateEnd, language });
 }
 
 function syncRoute(): void {
