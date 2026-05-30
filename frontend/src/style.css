@@ -99,6 +99,8 @@ button {
 .status-varaus { border-left: 5px solid var(--reserved); }
 .status-karenssi { border-left: 5px solid var(--cooldown); }
 .status-vapaa { border-left: 5px solid var(--free); }
+.status-note { margin-top: 12px; color: var(--muted); line-height: 1.45; }
+.status-note a { color: var(--accent); font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 
 .changes-panel { margin-top: 16px; }
 .section-header {

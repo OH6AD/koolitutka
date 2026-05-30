@@ -6,6 +6,8 @@ import { normalizeCallsign } from './callsign';
 import { buildRouteHash, parseRouteHash } from './route';
 import type { ChangeRow, EventRow, Language, LookupResult, Metadata, Status } from './types';
 
+const VALIDITY_RULES_URL = 'https://oh2ti.fi/wp-content/uploads/2023/05/PRK-RA2023_L1-L2_K-moduuli.pdf#page=9';
+
 const db = new DbClient();
 const initialRoute = parseRouteHash(location.hash);
 const savedLanguage = localStorage.getItem('language');
@@ -159,6 +161,7 @@ function renderLookup(result: LookupResult): string {
         </div>
         <div class="status-line">${current.callsign}: ${statusText(current.status)}</div>
         ${renderCurrentDates(current)}
+        ${renderNoHistoryNotice(result)}
       </article>
       <article>
         <h2>${t.history}</h2>
@@ -170,6 +173,12 @@ function renderLookup(result: LookupResult): string {
       </article>
     </section>
   `;
+}
+
+function renderNoHistoryNotice(result: LookupResult): string {
+  if (result.history.length > 0) return '';
+  const t = messages(language);
+  return `<p class="status-note">${t.noHistoryNotice} <a href="${VALIDITY_RULES_URL}" target="_blank" rel="noopener noreferrer">${t.validityRules}</a>.</p>`;
 }
 
 function renderEventsTable(rows: EventRow[]): string {

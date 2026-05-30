@@ -32,6 +32,8 @@ const translations = {
     metadata: 'Päivitetty {updated}',
     language: 'Kieli',
     close: 'Sulje',
+    noHistoryNotice: 'Tällä kutsulla ei ole tunnettua historiaa. Se voi olla vapaa tai virheellinen. Tarkista kelpoisuussäännöt ennen sen hakemista.',
+    validityRules: 'Kelpoisuussäännöt',
     statusText: {
       VOIMASSA: 'Voimassa',
       VARAUS: 'Varaus',
@@ -73,6 +75,8 @@ const translations = {
     metadata: 'Uppdaterad {updated}',
     language: 'Språk',
     close: 'Stäng',
+    noHistoryNotice: 'Den här anropssignalen har ingen känd historik. Den kan vara ledig eller ogiltig. Kontrollera giltighetsreglerna innan du ansöker om den.',
+    validityRules: 'Giltighetsregler',
     statusText: {
       VOIMASSA: 'I kraft',
       VARAUS: 'Reserverad',
@@ -114,6 +118,8 @@ const translations = {
     metadata: 'Updated {updated}',
     language: 'Language',
     close: 'Close',
+    noHistoryNotice: 'This callsign has no known history. It may be available, or it may be invalid. Check the validity rules before applying for it.',
+    validityRules: 'Validity rules',
     statusText: {
       VOIMASSA: 'Active',
       VARAUS: 'Reserved',
