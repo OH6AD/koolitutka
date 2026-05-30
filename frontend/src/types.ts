@@ -1,5 +1,6 @@
 export type Language = 'fi' | 'sv' | 'en';
 export type Status = 'VOIMASSA' | 'VARAUS' | 'KARENSSI' | 'VAPAA';
+export type SuggestionSearchMode = 'prefix' | 'anywhere';
 
 export interface EventRow {
   callsign: string;
@@ -41,7 +42,7 @@ export interface Metadata {
 export type WorkerRequest =
   | { id: number; type: 'init'; dbUrl: string }
   | { id: number; type: 'lookupCallsign'; callsign: string }
-  | { id: number; type: 'searchPrefix'; prefix: string; limit: number }
+  | { id: number; type: 'searchSuggestions'; query: string; mode: SuggestionSearchMode; limit: number }
   | { id: number; type: 'listChanges'; start: string; end: string }
   | { id: number; type: 'getMetadata' };
 

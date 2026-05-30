@@ -3,6 +3,7 @@ import { normalizeCallsign, neighbour } from './callsign';
 import { daysBetween, formatDuration } from './date';
 import { messages, pickLanguage } from './i18n';
 import { buildRouteHash, parseRouteHash } from './route';
+import { parsePrefixSearchOnly } from './searchMode';
 
 describe('language selection', () => {
   it('uses supported browser language and falls back to Finnish', () => {
@@ -40,5 +41,14 @@ describe('hash routing', () => {
       language: 'sv',
     });
     expect(buildRouteHash({ q: 'oh2ad', start: '2026-05-01', end: '2026-05-30', language: 'en' })).toBe('#q=OH2AD&start=2026-05-01&end=2026-05-30&lang=en');
+  });
+});
+
+
+describe('search mode', () => {
+  it('defaults to prefix search unless explicitly disabled', () => {
+    expect(parsePrefixSearchOnly(null)).toBe(true);
+    expect(parsePrefixSearchOnly('true')).toBe(true);
+    expect(parsePrefixSearchOnly('false')).toBe(false);
   });
 });

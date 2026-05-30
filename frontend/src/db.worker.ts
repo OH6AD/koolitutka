@@ -2,7 +2,7 @@ import initSqlJs, { type Database, type QueryExecResult } from 'sql.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { daysBetween } from './date';
 import { neighbour, normalizeCallsign } from './callsign';
-import type { ChangeRow, CurrentState, EventRow, LookupResult, Metadata, Status, WorkerRequest, WorkerResponse } from './types';
+import type { ChangeRow, CurrentState, EventRow, LookupResult, Metadata, Status, SuggestionSearchMode, WorkerRequest, WorkerResponse } from './types';
 
 const GENESIS_DATE = '2016-04-23';
 
@@ -31,8 +31,8 @@ async function handleRequest(request: WorkerRequest): Promise<unknown> {
   switch (request.type) {
     case 'lookupCallsign':
       return lookupCallsign(database, request.callsign);
-    case 'searchPrefix':
-      return searchPrefix(database, request.prefix, request.limit);
+    case 'searchSuggestions':
+      return searchSuggestions(database, request.query, request.mode, request.limit);
     case 'listChanges':
       return listChanges(database, request.start, request.end);
     case 'getMetadata':
@@ -67,17 +67,19 @@ function lookupCallsign(database: Database, value: string): LookupResult {
   };
 }
 
-function searchPrefix(database: Database, value: string, limit: number): Array<{ callsign: string; status: Status }> {
-  const prefix = normalizeCallsign(value);
-  if (prefix.length === 0) return [];
+function searchSuggestions(database: Database, value: string, mode: SuggestionSearchMode, limit: number): Array<{ callsign: string; status: Status }> {
+  const query = normalizeCallsign(value);
+  if (query.length === 0) return [];
+  const condition = mode === 'prefix' ? 'callsign BETWEEN ? AND ?' : "callsign LIKE ? ESCAPE '\\'";
+  const parameters = mode === 'prefix' ? [query, `${query}~`, limit * 4] : [`%${escapeLike(query)}%`, limit * 8];
   const result = rows<{ callsign: string; status: Exclude<Status, 'VAPAA'>; to_date: string }>(database.exec(
     `SELECT callsign, status, to_date
        FROM event
-      WHERE callsign BETWEEN ? AND ?
+      WHERE ${condition}
         AND is_wildcard = 0
       ORDER BY callsign ASC, to_date DESC
       LIMIT ?`,
-    [prefix, `${prefix}~`, limit * 4],
+    parameters,
   ));
 
   const seen = new Set<string>();
@@ -89,6 +91,10 @@ function searchPrefix(database: Database, value: string, limit: number): Array<{
     if (output.length >= limit) break;
   }
   return output;
+}
+
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (character) => `\\${character}`);
 }
 
 function listChanges(database: Database, start: string, end: string): ChangeRow[] {

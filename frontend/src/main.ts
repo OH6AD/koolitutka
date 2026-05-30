@@ -4,9 +4,11 @@ import { daysAgoIso, daysBetween, formatDuration, todayIso } from './date';
 import { formatMessage, languages, messages, pickLanguage } from './i18n';
 import { normalizeCallsign } from './callsign';
 import { buildRouteHash, parseRouteHash } from './route';
+import { parsePrefixSearchOnly } from './searchMode';
 import type { ChangeRow, EventRow, Language, LookupResult, Metadata, Status } from './types';
 
 const VALIDITY_RULES_URL = 'https://oh2ti.fi/wp-content/uploads/2023/05/PRK-RA2023_L1-L2_K-moduuli.pdf#page=9';
+const PREFIX_SEARCH_ONLY_KEY = 'prefixSearchOnly';
 
 const db = new DbClient();
 const initialRoute = parseRouteHash(location.hash);
@@ -17,6 +19,7 @@ let language: Language = initialRoute.language
 let dateStart = initialRoute.start ?? daysAgoIso(7);
 let dateEnd = initialRoute.end ?? todayIso();
 let pendingLookup = initialRoute.q;
+let prefixSearchOnly = parsePrefixSearchOnly(localStorage.getItem(PREFIX_SEARCH_ONLY_KEY));
 let metadata: Metadata | null = null;
 let lastLookup: LookupResult | null = null;
 let changes: ChangeRow[] = [];
@@ -70,6 +73,7 @@ function render(): void {
         <form id="search-form" class="search-form">
           <label for="callsign">${t.searchLabel}<input id="callsign" name="callsign" autocomplete="off" placeholder="${t.searchPlaceholder}" value="${lastLookup?.callsign ?? ''}" /></label>
           <button type="submit">${t.searchButton}</button>
+          <label class="checkbox-label"><input id="prefix-search-only" type="checkbox" ${prefixSearchOnly ? 'checked' : ''} />${t.prefixSearchOnly}</label>
         </form>
         <div id="suggestions" class="suggestions"></div>
       </section>
@@ -112,23 +116,14 @@ function bindEvents(): void {
     }).catch(showError);
   });
 
-  document.querySelector<HTMLInputElement>('#callsign')?.addEventListener('input', (event) => {
-    const value = normalizeCallsign((event.currentTarget as HTMLInputElement).value);
-    const suggestions = document.querySelector<HTMLDivElement>('#suggestions');
-    if (!suggestions || value.length < 2) {
-      if (suggestions) suggestions.innerHTML = '';
-      return;
-    }
-    db.searchPrefix(value).then((rows) => {
-      suggestions.innerHTML = rows.map((row) => `<button type="button" data-callsign="${row.callsign}">${row.callsign}</button>`).join('');
-      suggestions.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
-        button.addEventListener('click', () => {
-          const input = document.querySelector<HTMLInputElement>('#callsign');
-          if (input) input.value = button.dataset.callsign ?? '';
-          document.querySelector<HTMLFormElement>('#search-form')?.requestSubmit();
-        });
-      });
-    }).catch(showError);
+  document.querySelector<HTMLInputElement>('#callsign')?.addEventListener('input', () => {
+    refreshSuggestions().catch(showError);
+  });
+
+  document.querySelector<HTMLInputElement>('#prefix-search-only')?.addEventListener('change', (event) => {
+    prefixSearchOnly = (event.currentTarget as HTMLInputElement).checked;
+    localStorage.setItem(PREFIX_SEARCH_ONLY_KEY, String(prefixSearchOnly));
+    refreshSuggestions().catch(showError);
   });
 
   document.querySelector<HTMLFormElement>('#changes-form')?.addEventListener('submit', (event) => {
@@ -153,6 +148,26 @@ function bindEvents(): void {
     if (input) input.value = '';
     syncRoute();
     render();
+  });
+}
+
+function refreshSuggestions(): Promise<void> {
+  const input = document.querySelector<HTMLInputElement>('#callsign');
+  const suggestions = document.querySelector<HTMLDivElement>('#suggestions');
+  const value = normalizeCallsign(input?.value ?? '');
+  if (!suggestions || value.length < 2) {
+    if (suggestions) suggestions.innerHTML = '';
+    return Promise.resolve();
+  }
+
+  return db.searchSuggestions(value, prefixSearchOnly ? 'prefix' : 'anywhere').then((rows) => {
+    suggestions.innerHTML = rows.map((row) => `<button type="button" data-callsign="${row.callsign}">${row.callsign}</button>`).join('');
+    suggestions.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (input) input.value = button.dataset.callsign ?? '';
+        document.querySelector<HTMLFormElement>('#search-form')?.requestSubmit();
+      });
+    });
   });
 }
 
