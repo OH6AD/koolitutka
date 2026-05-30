@@ -84,6 +84,7 @@ function render(): void {
             <label>${t.from}<input type="date" id="start-date" value="${dateStart}" /></label>
             <label>${t.to}<input type="date" id="end-date" value="${dateEnd}" /></label>
             <button type="submit">${t.update}</button>
+            <button id="last-seven-days" class="secondary-button" type="button">${t.lastSevenDays}</button>
           </form>
         </div>
         ${renderChanges(changes)}
@@ -135,6 +136,13 @@ function bindEvents(): void {
     event.preventDefault();
     dateStart = document.querySelector<HTMLInputElement>('#start-date')?.value || dateStart;
     dateEnd = document.querySelector<HTMLInputElement>('#end-date')?.value || dateEnd;
+    syncRoute();
+    loadChanges().catch(showError);
+  });
+
+  document.querySelector<HTMLButtonElement>('#last-seven-days')?.addEventListener('click', () => {
+    dateStart = daysAgoIso(7);
+    dateEnd = todayIso();
     syncRoute();
     loadChanges().catch(showError);
   });
@@ -269,11 +277,14 @@ function syncRoute(): void {
 
 function applyHash(hash: string): void {
   const route = parseRouteHash(hash);
+  const previousLookup = pendingLookup;
   language = route.language ?? language;
   dateStart = route.start ?? daysAgoIso(7);
   dateEnd = route.end ?? todayIso();
   pendingLookup = route.q;
-  applyRouteState().catch(showError);
+  applyRouteState().then(() => {
+    if (pendingLookup !== null && pendingLookup !== previousLookup) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }).catch(showError);
 }
 
 function displayStart(row: { from_date: string | null; from_date_estimated?: boolean }): string {

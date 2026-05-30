@@ -83,6 +83,7 @@ button {
   background: var(--accent);
   color: #fff;
 }
+.secondary-button { background: #e8edf2; color: #354250; }
 
 .suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 0; }
 .suggestions button { background: #e8f1f5; color: #164c66; }
