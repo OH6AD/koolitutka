@@ -12,7 +12,7 @@ const translations = {
     available: 'Vapaa',
     currentStatus: 'Nykytila',
     history: 'Historia',
-    related: 'Liittyvät kutsut',
+    related: 'Läheiset kutsut',
     changes: 'Muutokset',
     from: 'Alkaen',
     to: 'Päättyen',

@@ -4,6 +4,8 @@ import { daysBetween } from './date';
 import { neighbour, normalizeCallsign } from './callsign';
 import type { ChangeRow, CurrentState, EventRow, LookupResult, Metadata, Status, WorkerRequest, WorkerResponse } from './types';
 
+const GENESIS_DATE = '2016-04-23';
+
 let db: Database | null = null;
 
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
@@ -60,8 +62,8 @@ function lookupCallsign(database: Database, value: string): LookupResult {
   return {
     callsign,
     current: currentState(callsign, direct),
-    history: direct,
-    related: related.filter((row) => row.to_date === 'NOW'),
+    history: direct.map(normalizeOpenStart),
+    related: related.filter((row) => row.to_date === 'NOW').map(normalizeOpenStart),
   };
 }
 
@@ -97,7 +99,7 @@ function listChanges(database: Database, start: string, end: string): ChangeRow[
         AND from_date IS NOT NULL
         AND from_date BETWEEN ? AND ?`,
     [start, end],
-  )).map((row) => changeRow(row, row.from_date ?? start, 'start', end));
+  )).map((row) => changeRow(normalizeOpenStart(row), row.from_date ?? start, 'start', end));
 
   const ended = rows<EventRow>(database.exec(
     `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date
@@ -106,9 +108,14 @@ function listChanges(database: Database, start: string, end: string): ChangeRow[
         AND to_date != 'NOW'
         AND to_date BETWEEN ? AND ?`,
     [start, end],
-  )).map((row) => changeRow(row, row.to_date, 'end', end));
+  )).map((row) => changeRow(normalizeOpenStart(row), row.to_date, 'end', end));
 
   return [...started, ...ended].sort((a, b) => a.change_date.localeCompare(b.change_date) || a.callsign.localeCompare(b.callsign));
+}
+
+function normalizeOpenStart(row: EventRow): EventRow {
+  if (row.from_date !== null) return row;
+  return { ...row, from_date: GENESIS_DATE, from_date_estimated: true };
 }
 
 function changeRow(row: EventRow, changeDate: string, changeType: 'start' | 'end', rangeEnd: string): ChangeRow {
@@ -123,7 +130,14 @@ function changeRow(row: EventRow, changeDate: string, changeType: 'start' | 'end
 function currentState(callsign: string, rows: EventRow[]): CurrentState {
   const current = rows.find((row) => row.to_date === 'NOW');
   if (current) {
-    return { callsign, status: current.status, from_date: current.from_date, to_date: null };
+    const normalized = normalizeOpenStart(current);
+    return {
+      callsign,
+      status: current.status,
+      from_date: normalized.from_date,
+      from_date_estimated: normalized.from_date_estimated,
+      to_date: null,
+    };
   }
   return { callsign, status: 'VAPAA', from_date: nextDay(lastEnd(rows)), to_date: null };
 }

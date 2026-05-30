@@ -25,5 +25,6 @@ describe('duration formatting', () => {
     expect(formatDuration(9, t)).toBe('9 d');
     expect(formatDuration(90, t)).toBe('3 mo');
     expect(formatDuration(430, t)).toBe('1 y 2 mo');
+    expect(formatDuration(3700, t, true)).toBe('> 10 y 2 mo');
   });
 });

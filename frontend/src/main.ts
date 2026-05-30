@@ -132,7 +132,7 @@ function renderLookup(result: LookupResult): string {
       <article class="status-card status-${current.status.toLowerCase()}">
         <h2>${t.currentStatus}</h2>
         <div class="status-line">${current.callsign}: ${statusText(current.status)}</div>
-        ${current.from_date ? `<p>${t.startDate}: ${current.from_date}</p>` : ''}
+        ${current.from_date ? `<p>${t.startDate}: ${displayStart(current)}</p>` : ''}
       </article>
       <article>
         <h2>${t.history}</h2>
@@ -157,8 +157,8 @@ function renderEventsTable(rows: EventRow[]): string {
           <tr>
             <td>${row.callsign}</td>
             <td>${statusText(row.status)}</td>
-            <td>${row.from_date ?? ''}</td>
-            <td>${row.to_date === 'NOW' ? t.active : row.to_date}</td>
+            <td>${displayStart(row)}</td>
+            <td>${displayEnd(row)}</td>
           </tr>`).join('')}</tbody>
       </table>
     </div>
@@ -177,9 +177,9 @@ function renderChanges(rows: ChangeRow[]): string {
             <td>${row.change_date} ${row.change_type === 'start' ? t.started : t.ended}</td>
             <td>${row.callsign}</td>
             <td>${statusText(row.status)}</td>
-            <td>${row.from_date ?? ''}</td>
-            <td>${row.to_date === 'NOW' ? t.active : row.to_date}</td>
-            <td>${formatDuration(row.duration_days, t)}</td>
+            <td>${displayStart(row)}</td>
+            <td>${displayEnd(row)}</td>
+            <td>${formatDuration(row.duration_days, t, row.from_date_estimated)}</td>
           </tr>`).join('')}</tbody>
       </table>
     </div>
@@ -197,6 +197,15 @@ function loadChanges(): Promise<void> {
 
 function dateInput(id: string, fallback: string): string {
   return document.querySelector<HTMLInputElement>(`#${id}`)?.value || fallback;
+}
+
+function displayStart(row: { from_date: string | null; from_date_estimated?: boolean }): string {
+  if (row.from_date === null) return '';
+  return row.from_date_estimated ? `< ${row.from_date}` : row.from_date;
+}
+
+function displayEnd(row: { to_date: string }): string {
+  return row.to_date === 'NOW' ? messages(language).active : row.to_date;
 }
 
 function statusText(status: Status): string {

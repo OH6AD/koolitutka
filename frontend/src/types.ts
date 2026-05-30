@@ -7,6 +7,7 @@ export interface EventRow {
   is_wildcard: number;
   status: Exclude<Status, 'VAPAA'>;
   from_date: string | null;
+  from_date_estimated?: boolean;
   to_date: string;
 }
 
@@ -14,6 +15,7 @@ export interface CurrentState {
   callsign: string;
   status: Status;
   from_date: string | null;
+  from_date_estimated?: boolean;
   to_date: string | null;
 }
 

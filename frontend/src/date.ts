@@ -24,11 +24,12 @@ export function daysBetween(start: string | null, end: string | null): number | 
   return Math.max(0, Math.round((endMs - startMs) / DAY_MS));
 }
 
-export function formatDuration(days: number | null, t: Messages): string {
+export function formatDuration(days: number | null, t: Messages, estimatedStart = false): string {
   if (days === null) return '';
-  if (days < 60) return t.days.replace('{n}', String(days));
-  if (days < 365) return t.months.replace('{n}', String(Math.max(1, Math.round(days / 30))));
+  const prefix = estimatedStart ? '> ' : '';
+  if (days < 60) return prefix + t.days.replace('{n}', String(days));
+  if (days < 365) return prefix + t.months.replace('{n}', String(Math.max(1, Math.round(days / 30))));
   const years = Math.floor(days / 365);
   const months = Math.round((days - years * 365) / 30);
-  return t.yearsMonths.replace('{years}', String(years)).replace('{months}', String(months));
+  return prefix + t.yearsMonths.replace('{years}', String(years)).replace('{months}', String(months));
 }
