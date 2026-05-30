@@ -1,0 +1,213 @@
+import './style.css';
+import { DbClient } from './dbClient';
+import { daysAgoIso, formatDuration, todayIso } from './date';
+import { formatMessage, languages, messages, pickLanguage } from './i18n';
+import { normalizeCallsign } from './callsign';
+import type { ChangeRow, EventRow, Language, LookupResult, Metadata, Status } from './types';
+
+const db = new DbClient();
+const savedLanguage = localStorage.getItem('language');
+let language: Language = savedLanguage && languages.includes(savedLanguage as Language)
+  ? savedLanguage as Language
+  : pickLanguage(navigator.languages);
+let metadata: Metadata | null = null;
+let lastLookup: LookupResult | null = null;
+let changes: ChangeRow[] = [];
+let isLoading = true;
+let error: string | null = null;
+
+const app = document.querySelector<HTMLDivElement>('#app');
+if (!app) throw new Error('Missing app root');
+
+render();
+db.init('/koolitutka.sqlite')
+  .then((data) => {
+    metadata = data;
+    isLoading = false;
+    return loadChanges();
+  })
+  .catch((reason) => {
+    isLoading = false;
+    error = reason instanceof Error ? reason.message : String(reason);
+    render();
+  });
+
+function render(): void {
+  const t = messages(language);
+  document.documentElement.lang = language;
+  app.innerHTML = `
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>${t.appTitle}</h1>
+          <p>${t.appSubtitle}</p>
+        </div>
+        <label class="language">
+          <span>${t.language}</span>
+          <select id="language-select">
+            ${languages.map((option) => `<option value="${option}" ${option === language ? 'selected' : ''}>${option.toUpperCase()}</option>`).join('')}
+          </select>
+        </label>
+      </header>
+
+      ${metadata ? `<p class="metadata">${formatMessage(t.metadata, { updated: metadata.updated })}</p>` : ''}
+      ${isLoading ? `<p class="notice">${t.loading}</p>` : ''}
+      ${error ? `<p class="notice error">${t.error}: ${escapeHtml(error)}</p>` : ''}
+
+      <section class="search-panel">
+        <form id="search-form" class="search-form">
+          <label for="callsign">${t.searchLabel}</label>
+          <input id="callsign" name="callsign" autocomplete="off" placeholder="${t.searchPlaceholder}" value="${lastLookup?.callsign ?? ''}" />
+          <button type="submit">${t.searchButton}</button>
+        </form>
+        <div id="suggestions" class="suggestions"></div>
+      </section>
+
+      ${lastLookup ? renderLookup(lastLookup) : ''}
+
+      <section class="changes-panel">
+        <div class="section-header">
+          <h2>${t.changes}</h2>
+          <form id="changes-form" class="date-form">
+            <label>${t.from}<input type="date" id="start-date" value="${dateInput('start-date', daysAgoIso(7))}" /></label>
+            <label>${t.to}<input type="date" id="end-date" value="${dateInput('end-date', todayIso())}" /></label>
+            <button type="submit">${t.update}</button>
+          </form>
+        </div>
+        ${renderChanges(changes)}
+      </section>
+    </main>
+  `;
+  bindEvents();
+}
+
+function bindEvents(): void {
+  document.querySelector<HTMLSelectElement>('#language-select')?.addEventListener('change', (event) => {
+    language = (event.currentTarget as HTMLSelectElement).value as Language;
+    localStorage.setItem('language', language);
+    render();
+  });
+
+  document.querySelector<HTMLFormElement>('#search-form')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const input = document.querySelector<HTMLInputElement>('#callsign');
+    const callsign = normalizeCallsign(input?.value ?? '');
+    if (callsign.length === 0) return;
+    db.lookupCallsign(callsign).then((result) => {
+      lastLookup = result;
+      render();
+    }).catch(showError);
+  });
+
+  document.querySelector<HTMLInputElement>('#callsign')?.addEventListener('input', (event) => {
+    const value = normalizeCallsign((event.currentTarget as HTMLInputElement).value);
+    const suggestions = document.querySelector<HTMLDivElement>('#suggestions');
+    if (!suggestions || value.length < 2) {
+      if (suggestions) suggestions.innerHTML = '';
+      return;
+    }
+    db.searchPrefix(value).then((rows) => {
+      suggestions.innerHTML = rows.map((row) => `<button type="button" data-callsign="${row.callsign}">${row.callsign}</button>`).join('');
+      suggestions.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+        button.addEventListener('click', () => {
+          const input = document.querySelector<HTMLInputElement>('#callsign');
+          if (input) input.value = button.dataset.callsign ?? '';
+          document.querySelector<HTMLFormElement>('#search-form')?.requestSubmit();
+        });
+      });
+    }).catch(showError);
+  });
+
+  document.querySelector<HTMLFormElement>('#changes-form')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    loadChanges().catch(showError);
+  });
+}
+
+function renderLookup(result: LookupResult): string {
+  const t = messages(language);
+  const current = result.current;
+  return `
+    <section class="lookup-grid">
+      <article class="status-card status-${current.status.toLowerCase()}">
+        <h2>${t.currentStatus}</h2>
+        <div class="status-line">${current.callsign}: ${statusText(current.status)}</div>
+        ${current.from_date ? `<p>${t.startDate}: ${current.from_date}</p>` : ''}
+      </article>
+      <article>
+        <h2>${t.history}</h2>
+        ${renderEventsTable(result.history)}
+      </article>
+      <article>
+        <h2>${t.related}</h2>
+        ${renderEventsTable(result.related)}
+      </article>
+    </section>
+  `;
+}
+
+function renderEventsTable(rows: EventRow[]): string {
+  const t = messages(language);
+  if (rows.length === 0) return `<p class="empty">${t.noRows}</p>`;
+  return `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>${t.callsign}</th><th>${t.status}</th><th>${t.startDate}</th><th>${t.endDate}</th></tr></thead>
+        <tbody>${rows.map((row) => `
+          <tr>
+            <td>${row.callsign}</td>
+            <td>${statusText(row.status)}</td>
+            <td>${row.from_date ?? ''}</td>
+            <td>${row.to_date === 'NOW' ? t.active : row.to_date}</td>
+          </tr>`).join('')}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderChanges(rows: ChangeRow[]): string {
+  const t = messages(language);
+  if (rows.length === 0) return `<p class="empty">${t.noRows}</p>`;
+  return `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>${t.change}</th><th>${t.callsign}</th><th>${t.status}</th><th>${t.startDate}</th><th>${t.endDate}</th><th>${t.duration}</th></tr></thead>
+        <tbody>${rows.map((row) => `
+          <tr>
+            <td>${row.change_date} ${row.change_type === 'start' ? t.started : t.ended}</td>
+            <td>${row.callsign}</td>
+            <td>${statusText(row.status)}</td>
+            <td>${row.from_date ?? ''}</td>
+            <td>${row.to_date === 'NOW' ? t.active : row.to_date}</td>
+            <td>${formatDuration(row.duration_days, t)}</td>
+          </tr>`).join('')}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function loadChanges(): Promise<void> {
+  const start = dateInput('start-date', daysAgoIso(7));
+  const end = dateInput('end-date', todayIso());
+  return db.listChanges(start, end).then((rows) => {
+    changes = rows;
+    render();
+  });
+}
+
+function dateInput(id: string, fallback: string): string {
+  return document.querySelector<HTMLInputElement>(`#${id}`)?.value || fallback;
+}
+
+function statusText(status: Status): string {
+  return messages(language).statusText[status];
+}
+
+function showError(reason: unknown): void {
+  error = reason instanceof Error ? reason.message : String(reason);
+  render();
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char] ?? char));
+}

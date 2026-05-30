@@ -1,0 +1,20 @@
+{
+  "name": "koolitutka-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "npm run export-db && vite build",
+    "export-db": "python3 scripts/export_public_db.py",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "sql.js": "^1.13.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.1.4"
+  }
+}
