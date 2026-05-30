@@ -1,6 +1,6 @@
 import './style.css';
 import { DbClient } from './dbClient';
-import { daysAgoIso, formatDuration, todayIso } from './date';
+import { daysAgoIso, daysBetween, formatDuration, todayIso } from './date';
 import { formatMessage, languages, messages, pickLanguage } from './i18n';
 import { normalizeCallsign } from './callsign';
 import type { ChangeRow, EventRow, Language, LookupResult, Metadata, Status } from './types';
@@ -122,6 +122,13 @@ function bindEvents(): void {
     event.preventDefault();
     loadChanges().catch(showError);
   });
+
+  document.querySelector<HTMLButtonElement>('#close-lookup')?.addEventListener('click', () => {
+    lastLookup = null;
+    const input = document.querySelector<HTMLInputElement>('#callsign');
+    if (input) input.value = '';
+    render();
+  });
 }
 
 function renderLookup(result: LookupResult): string {
@@ -130,9 +137,12 @@ function renderLookup(result: LookupResult): string {
   return `
     <section class="lookup-grid">
       <article class="status-card status-${current.status.toLowerCase()}">
-        <h2>${t.currentStatus}</h2>
+        <div class="card-header">
+          <h2>${t.currentStatus}</h2>
+          <button id="close-lookup" class="icon-button" type="button" aria-label="${t.close}" title="${t.close}">×</button>
+        </div>
         <div class="status-line">${current.callsign}: ${statusText(current.status)}</div>
-        ${current.from_date ? `<p>${t.startDate}: ${displayStart(current)}</p>` : ''}
+        ${renderCurrentDates(current)}
       </article>
       <article>
         <h2>${t.history}</h2>
@@ -193,6 +203,17 @@ function loadChanges(): Promise<void> {
     changes = rows;
     render();
   });
+}
+
+function renderCurrentDates(current: { from_date: string | null; from_date_estimated?: boolean; to_date: string | null }): string {
+  const t = messages(language);
+  const rows = [];
+  if (current.from_date) rows.push(`<p>${t.since}: ${displayStart(current)}</p>`);
+  if (current.to_date) rows.push(`<p>${t.endDate}: ${displayEnd({ to_date: current.to_date })}</p>`);
+  const end = current.to_date ?? todayIso();
+  const duration = formatDuration(daysBetween(current.from_date, end), t, current.from_date_estimated);
+  if (duration) rows.push(`<p>${t.duration}: ${duration}</p>`);
+  return rows.join('');
 }
 
 function dateInput(id: string, fallback: string): string {

@@ -34,6 +34,20 @@ button { cursor: pointer; }
 
 h1 { margin: 0; font-size: 2rem; letter-spacing: 0; }
 h2 { margin: 0 0 12px; font-size: 1.1rem; letter-spacing: 0; }
+.card-header { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.card-header h2 { margin-bottom: 12px; }
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: #edf1f5;
+  color: #354250;
+  font-size: 1.35rem;
+  line-height: 1;
+}
 p { margin: 0; }
 .topbar p, .metadata, .empty { color: var(--muted); }
 .metadata { margin-bottom: 16px; }

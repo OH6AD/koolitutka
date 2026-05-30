@@ -21,6 +21,7 @@ const translations = {
     callsign: 'Kutsu',
     status: 'Tila',
     startDate: 'Alkupäivä',
+    since: 'Alkaen',
     endDate: 'Loppupäivä',
     active: 'voimassa',
     change: 'Muutos',
@@ -29,6 +30,7 @@ const translations = {
     ended: 'päättyi',
     metadata: 'Päivitetty {updated}',
     language: 'Kieli',
+    close: 'Sulje',
     statusText: {
       VOIMASSA: 'Voimassa',
       VARAUS: 'Varaus',
@@ -59,6 +61,7 @@ const translations = {
     callsign: 'Anropssignal',
     status: 'Status',
     startDate: 'Startdatum',
+    since: 'Sedan',
     endDate: 'Slutdatum',
     active: 'aktiv',
     change: 'Ändring',
@@ -67,6 +70,7 @@ const translations = {
     ended: 'slutade',
     metadata: 'Uppdaterad {updated}',
     language: 'Språk',
+    close: 'Stäng',
     statusText: {
       VOIMASSA: 'I kraft',
       VARAUS: 'Reserverad',
@@ -97,6 +101,7 @@ const translations = {
     callsign: 'Callsign',
     status: 'Status',
     startDate: 'Start date',
+    since: 'Since',
     endDate: 'End date',
     active: 'active',
     change: 'Change',
@@ -105,6 +110,7 @@ const translations = {
     ended: 'ended',
     metadata: 'Updated {updated}',
     language: 'Language',
+    close: 'Close',
     statusText: {
       VOIMASSA: 'Active',
       VARAUS: 'Reserved',
