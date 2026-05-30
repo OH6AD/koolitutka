@@ -9,6 +9,9 @@ import type { ChangeRow, EventRow, Language, LookupResult, Metadata, Status } fr
 
 const VALIDITY_RULES_URL = 'https://oh2ti.fi/wp-content/uploads/2023/05/PRK-RA2023_L1-L2_K-moduuli.pdf#page=9';
 const PREFIX_SEARCH_ONLY_KEY = 'prefixSearchOnly';
+const AUTHOR_URL = 'https://zouppen.iki.fi/';
+const SOURCE_URL = 'https://github.com/OH6AD/koolitutka';
+const DATA_SOURCE_URL = 'https://github.com/OH6AD/koolit';
 
 const db = new DbClient();
 const initialRoute = parseRouteHash(location.hash);
@@ -53,9 +56,10 @@ function render(): void {
   app.innerHTML = `
     <main class="shell">
       <header class="topbar">
-        <div>
+        <div class="topleft">
           <h1>${t.appTitle}</h1>
           <p>${t.appSubtitle}</p>
+          ${metadata ? `<p class="metadata">${formatMessage(t.metadata, { updated: metadata.updated })}</p>` : ''}
         </div>
         <label class="language">
           <span>${t.language}</span>
@@ -65,7 +69,6 @@ function render(): void {
         </label>
       </header>
 
-      ${metadata ? `<p class="metadata">${formatMessage(t.metadata, { updated: metadata.updated })}</p>` : ''}
       ${isLoading ? `<p class="notice">${t.loading}</p>` : ''}
       ${error ? `<p class="notice error">${t.error}: ${escapeHtml(error)}</p>` : ''}
 
@@ -92,9 +95,20 @@ function render(): void {
         </div>
         ${renderChanges(changes)}
       </section>
+
+      ${renderFooter()}
     </main>
   `;
   bindEvents();
+}
+
+function renderFooter(): string {
+  const t = messages(language);
+  return `<footer class="footer">${formatMessage(t.footer, {
+    author: `<a href="${AUTHOR_URL}">OH64K</a>`,
+    source: `<a href="${SOURCE_URL}">GitHub</a>`,
+    dataSource: `<a href="${DATA_SOURCE_URL}">koolit</a>`,
+  })}</footer>`;
 }
 
 function bindEvents(): void {
