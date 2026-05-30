@@ -64,22 +64,22 @@ Usage:
 1. Clone git repository https://github.com/OH6AD/koolit/ to somewhere. You may use `--bare` to save some space.
 2. Copy `config.example.ini` to `config.ini`
 3. Edit `config.ini` and set repository path correctly
-4. Expose `public/` directory on your HTTP server
+4. Expose `old_public/` directory on your HTTP server
 
 It can be also run via command-line and play the audio locally:
 
 ```sh
-php public/koolipuhe.php opus 2020-04-10 | vlc fd://0 vlc://quit
+php old_public/koolipuhe.php opus 2020-04-10 | vlc fd://0 vlc://quit
 ```
 
 Or just as text:
 
 ```sh
-php public/koolipuhe.php text 2020-04-10
+php old_public/koolipuhe.php text 2020-04-10
 ```
 
 Or send Matrix message;
 
 ```sh
-php public/koolipuhe.php matrix
+php old_public/koolipuhe.php matrix
 ```
