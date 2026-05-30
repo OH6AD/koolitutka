@@ -68,8 +68,7 @@ function render(): void {
 
       <section class="search-panel">
         <form id="search-form" class="search-form">
-          <label for="callsign">${t.searchLabel}</label>
-          <input id="callsign" name="callsign" autocomplete="off" placeholder="${t.searchPlaceholder}" value="${lastLookup?.callsign ?? ''}" />
+          <label for="callsign">${t.searchLabel}<input id="callsign" name="callsign" autocomplete="off" placeholder="${t.searchPlaceholder}" value="${lastLookup?.callsign ?? ''}" /></label>
           <button type="submit">${t.searchButton}</button>
         </form>
         <div id="suggestions" class="suggestions"></div>
