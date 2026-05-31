@@ -3,4 +3,7 @@
 /db.sqlite
 /db.sqlite-shm
 /db.sqlite-wal
+/frontend/static/koolitutka.sqlite
+/frontend/static/koolitutka.sqlite-*
+/public/
 node_modules/

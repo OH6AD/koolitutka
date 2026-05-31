@@ -49,6 +49,16 @@ from_date = 2018-04-16
 sqlite>
 ```
 
+## Static frontend
+
+Koolitutka also includes a browser-only frontend for searching callsigns,
+viewing callsign history, and browsing recent changes. The frontend is built
+with Vite and reads a generated SQLite database directly in the browser with
+`sql.js`, so the deployed version can be served as static files.
+
+See [frontend/README.md](frontend/README.md) for development, build, and
+deployment instructions.
+
 ## Callsign difference tool
 
 May be used to send daily Matrix notifications, speak out new
