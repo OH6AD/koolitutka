@@ -100,8 +100,7 @@ function listChanges(database: Database, start: string, end: string): ChangeRow[
   const started = rows<EventRow>(database.exec(
     `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date
        FROM event
-      WHERE is_wildcard = 0
-        AND from_date IS NOT NULL
+      WHERE from_date IS NOT NULL
         AND from_date BETWEEN ? AND ?`,
     [start, end],
   )).map((row) => changeRow(normalizeOpenStart(row), row.from_date ?? start, 'start', end));
@@ -109,8 +108,7 @@ function listChanges(database: Database, start: string, end: string): ChangeRow[
   const ended = rows<EventRow>(database.exec(
     `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date
        FROM event
-      WHERE is_wildcard = 0
-        AND to_date != 'NOW'
+      WHERE to_date != 'NOW'
         AND to_date BETWEEN ? AND ?`,
     [start, end],
   )).map((row) => changeRow(normalizeOpenStart(row), row.to_date, 'end', end));

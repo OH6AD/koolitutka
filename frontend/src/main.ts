@@ -252,7 +252,7 @@ function renderChanges(rows: ChangeRow[]): string {
           <tr>
             <td>${row.change_date}</td>
             <td>${row.change_type === 'start' ? t.started : t.ended}</td>
-            <td><a class="callsign-link" href="${callsignHash(row.callsign)}">${row.callsign}</a></td>
+            <td>${renderCallsignCell(row.callsign, row.is_wildcard === 0)}</td>
             <td>${statusText(row.status)}</td>
             <td>${displayStart(row)}</td>
             <td>${displayEnd(row)}</td>
