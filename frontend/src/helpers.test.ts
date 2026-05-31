@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { normalizeCallsign, neighbour } from './callsign';
 import { daysBetween, formatDuration } from './date';
 import { messages, pickLanguage } from './i18n';
+import { currentState, mergedHistory } from './lookup';
 import { buildRouteHash, parseRouteHash } from './route';
 import { parsePrefixSearchOnly } from './searchMode';
 
@@ -31,6 +32,45 @@ describe('duration formatting', () => {
     expect(formatDuration('2022-06-09', '2026-05-31', t)).toBe('3 y 11 mo');
     expect(formatDuration('2024-06-01', '2026-06-01', t)).toBe('2 y');
     expect(formatDuration('2016-04-23', '2026-06-01', t, true)).toBe('> 10 y 1 mo');
+  });
+});
+
+
+describe('lookup history', () => {
+  it('merges exact and wildcard history chronologically', () => {
+    const rows = [
+      { callsign: 'OH*EYA', neighbour: 'OH*EYA', is_wildcard: 1, status: 'KARENSSI' as const, from_date: '2019-10-23', to_date: '2021-10-21' },
+      { callsign: 'OH6EYA', neighbour: 'OH*EYA', is_wildcard: 0, status: 'VOIMASSA' as const, from_date: null, to_date: '2019-10-22' },
+    ];
+
+    expect(mergedHistory(rows).map((row) => [row.callsign, row.from_date, row.to_date])).toEqual([
+      ['OH6EYA', '2016-04-23', '2019-10-22'],
+      ['OH*EYA', '2019-10-23', '2021-10-21'],
+    ]);
+  });
+
+  it('uses active wildcard history for current status when exact callsign is inactive', () => {
+    const rows = [
+      { callsign: 'OH6JXE', neighbour: 'OH*JXE', is_wildcard: 0, status: 'VOIMASSA' as const, from_date: '2020-01-01', to_date: '2024-05-30' },
+      { callsign: 'OH*JXE', neighbour: 'OH*JXE', is_wildcard: 1, status: 'KARENSSI' as const, from_date: '2024-05-31', to_date: 'NOW' },
+    ];
+
+    expect(currentState('OH6JXE', rows)).toEqual({
+      callsign: 'OH6JXE',
+      status: 'KARENSSI',
+      from_date: '2024-05-31',
+      from_date_estimated: undefined,
+      to_date: null,
+    });
+  });
+
+  it('prefers exact active history over active wildcard history', () => {
+    const rows = [
+      { callsign: 'OH6ABC', neighbour: 'OH*ABC', is_wildcard: 0, status: 'VOIMASSA' as const, from_date: '2025-01-01', to_date: 'NOW' },
+      { callsign: 'OH*ABC', neighbour: 'OH*ABC', is_wildcard: 1, status: 'KARENSSI' as const, from_date: '2024-01-01', to_date: 'NOW' },
+    ];
+
+    expect(currentState('OH6ABC', rows).status).toBe('VOIMASSA');
   });
 });
 

@@ -1,9 +1,9 @@
 import initSqlJs, { type Database, type QueryExecResult } from 'sql.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { neighbour, normalizeCallsign } from './callsign';
-import type { ChangeRow, CurrentState, EventRow, LookupResult, Metadata, Status, SuggestionSearchMode, WorkerRequest, WorkerResponse } from './types';
+import { currentState, mergedHistory, normalizeOpenStart } from './lookup';
+import type { ChangeRow, EventRow, LookupResult, Metadata, Status, SuggestionSearchMode, WorkerRequest, WorkerResponse } from './types';
 
-const GENESIS_DATE = '2016-04-23';
 
 let db: Database | null = null;
 
@@ -42,26 +42,26 @@ async function handleRequest(request: WorkerRequest): Promise<unknown> {
 function lookupCallsign(database: Database, value: string): LookupResult {
   const callsign = normalizeCallsign(value);
   const wildcard = neighbour(callsign);
-  const direct = rows<EventRow>(database.exec(
+  const historyRows = rows<EventRow>(database.exec(
     `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date
        FROM event
-      WHERE callsign = ?
-      ORDER BY COALESCE(from_date, ''), to_date`,
-    [callsign],
+      WHERE callsign = ? OR callsign = ?`,
+    [callsign, wildcard],
   ));
   const related = rows<EventRow>(database.exec(
     `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date
        FROM event
       WHERE callsign != ?
-        AND (callsign = ? OR neighbour = ?)
+        AND callsign != ?
+        AND neighbour = ?
       ORDER BY is_wildcard DESC, callsign, COALESCE(from_date, ''), to_date`,
     [callsign, wildcard, wildcard],
   ));
 
   return {
     callsign,
-    current: currentState(callsign, direct),
-    history: direct.map(normalizeOpenStart),
+    current: currentState(callsign, historyRows),
+    history: mergedHistory(historyRows),
     related: related.filter((row) => row.to_date === 'NOW').map(normalizeOpenStart),
   };
 }
@@ -118,11 +118,6 @@ function listChanges(database: Database, start: string, end: string): ChangeRow[
   return [...started, ...ended].sort((a, b) => b.change_date.localeCompare(a.change_date) || a.callsign.localeCompare(b.callsign));
 }
 
-function normalizeOpenStart(row: EventRow): EventRow {
-  if (row.from_date !== null) return row;
-  return { ...row, from_date: GENESIS_DATE, from_date_estimated: true };
-}
-
 function changeRow(row: EventRow, changeDate: string, changeType: 'start' | 'end', rangeEnd: string): ChangeRow {
   return {
     ...row,
@@ -130,33 +125,6 @@ function changeRow(row: EventRow, changeDate: string, changeType: 'start' | 'end
     change_type: changeType,
     duration_end_date: row.to_date === 'NOW' ? rangeEnd : row.to_date,
   };
-}
-
-function currentState(callsign: string, rows: EventRow[]): CurrentState {
-  const current = rows.find((row) => row.to_date === 'NOW');
-  if (current) {
-    const normalized = normalizeOpenStart(current);
-    return {
-      callsign,
-      status: current.status,
-      from_date: normalized.from_date,
-      from_date_estimated: normalized.from_date_estimated,
-      to_date: null,
-    };
-  }
-  return { callsign, status: 'VAPAA', from_date: nextDay(lastEnd(rows)), to_date: null };
-}
-
-function lastEnd(rows: EventRow[]): string | null {
-  const dates = rows.map((row) => row.to_date).filter((date) => date !== 'NOW').sort();
-  return dates.at(-1) ?? null;
-}
-
-function nextDay(value: string | null): string | null {
-  if (value === null) return null;
-  const date = new Date(`${value}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + 1);
-  return date.toISOString().slice(0, 10);
 }
 
 function getMetadata(): Metadata {
