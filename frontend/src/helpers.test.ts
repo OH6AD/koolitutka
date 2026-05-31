@@ -24,10 +24,13 @@ describe('duration formatting', () => {
 
   it('formats days, months, and years', () => {
     expect(daysBetween('2026-05-01', '2026-05-10')).toBe(9);
-    expect(formatDuration(9, t)).toBe('9 d');
-    expect(formatDuration(90, t)).toBe('3 mo');
-    expect(formatDuration(430, t)).toBe('1 y 2 mo');
-    expect(formatDuration(3700, t, true)).toBe('> 10 y 2 mo');
+    expect(formatDuration('2026-05-01', '2026-05-10', t)).toBe('9 d');
+    expect(formatDuration('2026-01-01', '2026-03-31', t)).toBe('89 d');
+    expect(formatDuration('2026-01-01', '2026-04-01', t)).toBe('3 mo');
+    expect(formatDuration('2025-01-15', '2026-03-15', t)).toBe('1 y 2 mo');
+    expect(formatDuration('2022-06-09', '2026-05-31', t)).toBe('3 y 11 mo');
+    expect(formatDuration('2024-06-01', '2026-06-01', t)).toBe('2 y');
+    expect(formatDuration('2016-04-23', '2026-06-01', t, true)).toBe('> 10 y 1 mo');
   });
 });
 

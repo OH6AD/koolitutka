@@ -24,12 +24,38 @@ export function daysBetween(start: string | null, end: string | null): number | 
   return Math.max(0, Math.round((endMs - startMs) / DAY_MS));
 }
 
-export function formatDuration(days: number | null, t: Messages, estimatedStart = false): string {
-  if (days === null) return '';
+export function formatDuration(start: string | null, end: string | null, t: Messages, estimatedStart = false): string {
+  if (start === null || end === null) return '';
+  const startDate = parseIsoDate(start);
+  const endDate = parseIsoDate(end);
+  if (!startDate || !endDate) return '';
+
   const prefix = estimatedStart ? '> ' : '';
-  if (days < 60) return prefix + t.days.replace('{n}', String(days));
-  if (days < 365) return prefix + t.months.replace('{n}', String(Math.max(1, Math.round(days / 30))));
-  const years = Math.floor(days / 365);
-  const months = Math.round((days - years * 365) / 30);
+  const days = daysBetween(start, end);
+  const monthsTotal = calendarMonthsBetween(startDate, endDate);
+  if (monthsTotal < 3) return prefix + t.days.replace('{n}', String(days ?? 0));
+  if (monthsTotal < 12) return prefix + t.months.replace('{n}', String(monthsTotal));
+
+  const years = Math.floor(monthsTotal / 12);
+  const months = monthsTotal % 12;
+  if (months === 0) return prefix + t.years.replace('{n}', String(years));
   return prefix + t.yearsMonths.replace('{years}', String(years)).replace('{months}', String(months));
+}
+
+function parseIsoDate(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  return date;
+}
+
+function calendarMonthsBetween(start: Date, end: Date): number {
+  if (end.getTime() <= start.getTime()) return 0;
+  let months = (end.getUTCFullYear() - start.getUTCFullYear()) * 12 + end.getUTCMonth() - start.getUTCMonth();
+  if (end.getUTCDate() < start.getUTCDate()) months -= 1;
+  return Math.max(0, months);
 }

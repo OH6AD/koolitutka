@@ -45,6 +45,7 @@ const translations = {
     } satisfies Record<Status, string>,
     days: '{n} pv',
     months: '{n} kk',
+    years: '{n} v',
     yearsMonths: '{years} v {months} kk',
   },
   sv: {
@@ -91,6 +92,7 @@ const translations = {
     } satisfies Record<Status, string>,
     days: '{n} d',
     months: '{n} mån',
+    years: '{n} år',
     yearsMonths: '{years} år {months} mån',
   },
   en: {
@@ -137,6 +139,7 @@ const translations = {
     } satisfies Record<Status, string>,
     days: '{n} d',
     months: '{n} mo',
+    years: '{n} y',
     yearsMonths: '{years} y {months} mo',
   },
 };

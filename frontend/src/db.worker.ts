@@ -1,6 +1,5 @@
 import initSqlJs, { type Database, type QueryExecResult } from 'sql.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
-import { daysBetween } from './date';
 import { neighbour, normalizeCallsign } from './callsign';
 import type { ChangeRow, CurrentState, EventRow, LookupResult, Metadata, Status, SuggestionSearchMode, WorkerRequest, WorkerResponse } from './types';
 
@@ -116,7 +115,7 @@ function listChanges(database: Database, start: string, end: string): ChangeRow[
     [start, end],
   )).map((row) => changeRow(normalizeOpenStart(row), row.to_date, 'end', end));
 
-  return [...started, ...ended].sort((a, b) => a.change_date.localeCompare(b.change_date) || a.callsign.localeCompare(b.callsign));
+  return [...started, ...ended].sort((a, b) => b.change_date.localeCompare(a.change_date) || a.callsign.localeCompare(b.callsign));
 }
 
 function normalizeOpenStart(row: EventRow): EventRow {
@@ -129,7 +128,7 @@ function changeRow(row: EventRow, changeDate: string, changeType: 'start' | 'end
     ...row,
     change_date: changeDate,
     change_type: changeType,
-    duration_days: daysBetween(row.from_date, row.to_date === 'NOW' ? rangeEnd : row.to_date),
+    duration_end_date: row.to_date === 'NOW' ? rangeEnd : row.to_date,
   };
 }
 

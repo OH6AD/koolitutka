@@ -1,6 +1,6 @@
 import './style.css';
 import { DbClient } from './dbClient';
-import { daysAgoIso, daysBetween, formatDuration, todayIso } from './date';
+import { daysAgoIso, formatDuration, todayIso } from './date';
 import { formatMessage, languages, messages, pickLanguage } from './i18n';
 import { normalizeCallsign } from './callsign';
 import { buildRouteHash, parseRouteHash } from './route';
@@ -256,7 +256,7 @@ function renderChanges(rows: ChangeRow[]): string {
             <td>${statusText(row.status)}</td>
             <td>${displayStart(row)}</td>
             <td>${displayEnd(row)}</td>
-            <td>${formatDuration(row.duration_days, t, row.from_date_estimated)}</td>
+            <td>${formatDuration(row.from_date, row.duration_end_date, t, row.from_date_estimated)}</td>
           </tr>`).join('')}</tbody>
       </table>
     </div>
@@ -276,7 +276,7 @@ function renderCurrentDates(current: { from_date: string | null; from_date_estim
   if (current.from_date) rows.push(`<p>${t.since}: ${displayStart(current)}</p>`);
   if (current.to_date) rows.push(`<p>${t.endDate}: ${displayEnd({ to_date: current.to_date })}</p>`);
   const end = current.to_date ?? todayIso();
-  const duration = formatDuration(daysBetween(current.from_date, end), t, current.from_date_estimated);
+  const duration = formatDuration(current.from_date, end, t, current.from_date_estimated);
   if (duration) rows.push(`<p>${t.duration}: ${duration}</p>`);
   return rows.join('');
 }

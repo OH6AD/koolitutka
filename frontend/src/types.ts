@@ -30,7 +30,7 @@ export interface LookupResult {
 export interface ChangeRow extends EventRow {
   change_date: string;
   change_type: 'start' | 'end';
-  duration_days: number | null;
+  duration_end_date: string | null;
 }
 
 export interface Metadata {
