@@ -58,7 +58,7 @@ function render(): void {
         <div class="topleft">
           <h1>${t.appTitle}</h1>
           <p>${t.appSubtitle}</p>
-          ${metadata ? `<p class="metadata">${formatMessage(t.metadata, { updated: metadata.updated })}</p>` : ''}
+          ${metadata ? `<p class="metadata">${formatMessage(t.metadata, { genesis: metadata.genesis, updated: metadata.updated })}</p>` : ''}
         </div>
         <label class="language">
           <span>${t.language}</span>

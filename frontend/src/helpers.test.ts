@@ -51,7 +51,7 @@ describe('lookup history', () => {
       { callsign: 'OH6EYA', neighbour: 'OH*EYA', is_wildcard: 0, status: 'VOIMASSA' as const, from_date: null, to_date: '2019-10-22' },
     ];
 
-    expect(mergedHistory(rows).map((row) => [row.callsign, row.from_date, row.to_date])).toEqual([
+    expect(mergedHistory(rows, '2016-04-23').map((row) => [row.callsign, row.from_date, row.to_date])).toEqual([
       ['OH6EYA', '2016-04-23', '2019-10-22'],
       ['OH*EYA', '2019-10-23', '2021-10-21'],
     ]);
@@ -63,7 +63,7 @@ describe('lookup history', () => {
       { callsign: 'OH*JXE', neighbour: 'OH*JXE', is_wildcard: 1, status: 'KARENSSI' as const, from_date: '2024-05-31', to_date: 'NOW' },
     ];
 
-    expect(currentState('OH6JXE', rows)).toEqual({
+    expect(currentState('OH6JXE', rows, '2016-04-23')).toEqual({
       callsign: 'OH6JXE',
       status: 'KARENSSI',
       from_date: '2024-05-31',
@@ -78,7 +78,7 @@ describe('lookup history', () => {
       { callsign: 'OH*ABC', neighbour: 'OH*ABC', is_wildcard: 1, status: 'KARENSSI' as const, from_date: '2024-01-01', to_date: 'NOW' },
     ];
 
-    expect(currentState('OH6ABC', rows).status).toBe('VOIMASSA');
+    expect(currentState('OH6ABC', rows, '2016-04-23').status).toBe('VOIMASSA');
   });
 });
 

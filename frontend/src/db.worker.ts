@@ -5,6 +5,7 @@ import { currentState, databaseNeighbour, mergedHistory, normalizeOpenStart } fr
 import type { ChangeRow, EventRow, LookupResult, Metadata, Status, SuggestionSearchMode, WorkerRequest, WorkerResponse } from './types';
 
 let db: Database | null = null;
+let metadata: Metadata | null = null;
 
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   const request = event.data;
@@ -22,7 +23,8 @@ async function handleRequest(request: WorkerRequest): Promise<unknown> {
     const response = await fetch(request.dbUrl, { cache: 'no-cache' });
     if (!response.ok) throw new Error(`Unable to load database: ${response.status}`);
     db = new SQL.Database(new Uint8Array(await response.arrayBuffer()));
-    return getMetadata();
+    metadata = getMetadata();
+    return metadata;
   }
 
   const database = requireDb();
@@ -39,6 +41,7 @@ async function handleRequest(request: WorkerRequest): Promise<unknown> {
 }
 
 function lookupCallsign(database: Database, value: string): LookupResult {
+  const genesis = requireMetadata().genesis;
   const callsign = normalizeCallsign(value);
   const exactRows = rows<EventRow>(database.exec(
     `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date
@@ -75,9 +78,9 @@ function lookupCallsign(database: Database, value: string): LookupResult {
 
   return {
     callsign,
-    current: currentState(callsign, historyRows),
-    history: mergedHistory(historyRows),
-    related: related.map(normalizeOpenStart),
+    current: currentState(callsign, historyRows, genesis),
+    history: mergedHistory(historyRows, genesis),
+    related: related.map((row) => normalizeOpenStart(row, genesis)),
   };
 }
 
@@ -112,13 +115,14 @@ function escapeLike(value: string): string {
 }
 
 function listChanges(database: Database, start: string, end: string): ChangeRow[] {
+  const genesis = requireMetadata().genesis;
   const started = rows<EventRow>(database.exec(
     `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date
        FROM event
       WHERE from_date IS NOT NULL
         AND from_date BETWEEN ? AND ?`,
     [start, end],
-  )).map((row) => changeRow(normalizeOpenStart(row), row.from_date ?? start, 'start', end));
+  )).map((row) => changeRow(normalizeOpenStart(row, genesis), row.from_date ?? start, 'start', end));
 
   const ended = rows<EventRow>(database.exec(
     `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date
@@ -126,7 +130,7 @@ function listChanges(database: Database, start: string, end: string): ChangeRow[
       WHERE to_date != 'NOW'
         AND to_date BETWEEN ? AND ?`,
     [start, end],
-  )).map((row) => changeRow(normalizeOpenStart(row), row.to_date, 'end', end));
+  )).map((row) => changeRow(normalizeOpenStart(row, genesis), row.to_date, 'end', end));
 
   return [...started, ...ended].sort((a, b) => b.change_date.localeCompare(a.change_date) || a.callsign.localeCompare(b.callsign));
 }
@@ -149,6 +153,11 @@ function getMetadata(): Metadata {
 function requireDb(): Database {
   if (db === null) throw new Error('Database is not initialized');
   return db;
+}
+
+function requireMetadata(): Metadata {
+  if (metadata === null) throw new Error('Database metadata is not initialized');
+  return metadata;
 }
 
 function rows<T extends Record<string, unknown>>(result: QueryExecResult[]): T[] {

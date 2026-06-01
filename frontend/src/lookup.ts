@@ -1,17 +1,15 @@
 import type { CurrentState, EventRow } from './types';
 
-const GENESIS_DATE = '2016-04-23';
-
 export function databaseNeighbour(rows: EventRow[]): string | null {
   return rows.map((row) => row.neighbour).find((value) => value.length > 0) ?? null;
 }
 
-export function mergedHistory(rows: EventRow[]): EventRow[] {
-  return rows.map(normalizeOpenStart).sort(compareEvents);
+export function mergedHistory(rows: EventRow[], genesis: string): EventRow[] {
+  return rows.map((row) => normalizeOpenStart(row, genesis)).sort(compareEvents);
 }
 
-export function currentState(callsign: string, rows: EventRow[]): CurrentState {
-  const normalized = mergedHistory(rows);
+export function currentState(callsign: string, rows: EventRow[], genesis: string): CurrentState {
+  const normalized = mergedHistory(rows, genesis);
   const exactCurrent = normalized.find((row) => row.callsign === callsign && row.to_date === 'NOW');
   const wildcardCurrent = normalized.find((row) => row.callsign !== callsign && row.to_date === 'NOW');
   const current = exactCurrent ?? wildcardCurrent;
@@ -27,9 +25,9 @@ export function currentState(callsign: string, rows: EventRow[]): CurrentState {
   return { callsign, status: 'VAPAA', from_date: nextDay(lastEnd(normalized)), to_date: null };
 }
 
-export function normalizeOpenStart(row: EventRow): EventRow {
+export function normalizeOpenStart(row: EventRow, genesis: string): EventRow {
   if (row.from_date !== null) return row;
-  return { ...row, from_date: GENESIS_DATE, from_date_estimated: true };
+  return { ...row, from_date: genesis, from_date_estimated: true };
 }
 
 function compareEvents(a: EventRow, b: EventRow): number {
