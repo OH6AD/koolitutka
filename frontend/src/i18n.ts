@@ -38,7 +38,7 @@ const translations = {
     validityRules: 'Kelpoisuussäännöt',
     footer: 'Koolitutkan tekijä on {author}. Lähdekoodi on {source}issa, data on peräisin projektista {dataSource}. Ideoita ovat antaneet OH2LAK Erik ja OH3HZB Lasse.',
     statusText: {
-      VOIMASSA: 'Voimassa',
+      VOIMASSA: 'Voimassaolo',
       VARAUS: 'Varaus',
       KARENSSI: 'Karenssi',
       VAPAA: 'Vapaa',
