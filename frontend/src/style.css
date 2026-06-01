@@ -34,9 +34,10 @@ button { cursor: pointer; }
 
 .topleft {
   background-image: url("../tuulikotka.png");
-  background-position: left;
-  background-size: contain;
+  background-position: top left;
+  background-size: auto 5.5em;
   background-repeat: no-repeat;
+  min-height: 5.5em;
   padding-left: 8em;
 }
 
