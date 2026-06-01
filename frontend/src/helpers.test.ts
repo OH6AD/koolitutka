@@ -90,6 +90,7 @@ describe('hash routing', () => {
       date: '2026-05-30',
     });
     expect(buildRouteHash({ q: 'oh2ad', date: '2026-05-30' })).toBe('#q=OH2AD&date=2026-05-30');
+    expect(buildRouteHash({ q: 'oh2ad', date: null })).toBe('#q=OH2AD');
   });
 });
 

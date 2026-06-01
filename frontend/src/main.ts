@@ -19,6 +19,7 @@ const savedLanguage = localStorage.getItem('language');
 let language: Language = (savedLanguage && languages.includes(savedLanguage as Language) ? savedLanguage as Language : null)
   ?? pickLanguage(navigator.languages);
 let changesDate = initialRoute.date ?? todayIso();
+let changesDateExplicit = initialRoute.date !== null;
 let changesLimit = 20;
 let changesHasMore = false;
 let pendingLookup = initialRoute.q;
@@ -40,7 +41,7 @@ render();
 db.init(new URL('koolitutka.sqlite', document.baseURI).toString())
   .then((data) => {
     metadata = data;
-    if (initialRoute.date === null) changesDate = metadata.updated || todayIso();
+    if (!changesDateExplicit) changesDate = metadata.updated || todayIso();
     isLoading = false;
     syncRoute();
     return applyRouteState();
@@ -90,6 +91,7 @@ function render(): void {
           <form id="changes-form" class="date-form">
             <label>${t.until}<input type="date" id="changes-date" value="${changesDate}" /></label>
             <button type="submit">${t.update}</button>
+            <button id="show-newest-changes" class="secondary-button" type="button">${t.showNewest}</button>
           </form>
         </div>
         ${renderChanges(changes)}
@@ -141,6 +143,15 @@ function bindEvents(): void {
   document.querySelector<HTMLFormElement>('#changes-form')?.addEventListener('submit', (event) => {
     event.preventDefault();
     changesDate = document.querySelector<HTMLInputElement>('#changes-date')?.value || changesDate;
+    changesDateExplicit = true;
+    changesLimit = 20;
+    syncRoute();
+    loadChanges().catch(showError);
+  });
+
+  document.querySelector<HTMLButtonElement>('#show-newest-changes')?.addEventListener('click', () => {
+    changesDate = metadata?.updated || todayIso();
+    changesDateExplicit = false;
     changesLimit = 20;
     syncRoute();
     loadChanges().catch(showError);
@@ -298,17 +309,18 @@ function applyRouteState(): Promise<void> {
 }
 
 function callsignHash(callsign: string): string {
-  return buildRouteHash({ q: callsign, date: changesDate });
+  return buildRouteHash({ q: callsign, date: changesDateExplicit ? changesDate : null });
 }
 
 function syncRoute(): void {
-  const hash = buildRouteHash({ q: lastLookup?.callsign ?? pendingLookup, date: changesDate });
+  const hash = buildRouteHash({ q: lastLookup?.callsign ?? pendingLookup, date: changesDateExplicit ? changesDate : null });
   if (location.hash !== hash) history.replaceState(null, '', hash);
 }
 
 function applyHash(hash: string): void {
   const route = parseRouteHash(hash);
   const previousLookup = pendingLookup;
+  changesDateExplicit = route.date !== null;
   changesDate = route.date ?? metadata?.updated ?? todayIso();
   changesLimit = 20;
   pendingLookup = route.q;

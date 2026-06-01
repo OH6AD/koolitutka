@@ -19,10 +19,10 @@ export function parseRouteHash(hash: string): RouteState {
   };
 }
 
-export function buildRouteHash(state: { q?: string | null; date: string }): string {
+export function buildRouteHash(state: { q?: string | null; date?: string | null }): string {
   const params = new URLSearchParams();
   const q = normalizeCallsign(state.q ?? '');
   if (q.length > 0) params.set('q', q);
-  params.set('date', state.date);
+  if (state.date) params.set('date', state.date);
   return `#${params.toString()}`;
 }
