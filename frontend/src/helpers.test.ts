@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { normalizeCallsign, neighbour } from './callsign';
 import { daysBetween, formatDuration } from './date';
 import { messages, pickLanguage } from './i18n';
-import { currentState, mergedHistory } from './lookup';
+import { currentState, databaseNeighbour, mergedHistory } from './lookup';
 import { buildRouteHash, parseRouteHash } from './route';
 import { parsePrefixSearchOnly } from './searchMode';
 
@@ -37,6 +37,14 @@ describe('duration formatting', () => {
 
 
 describe('lookup history', () => {
+  it('uses database-provided neighbour from exact rows', () => {
+    const rows = [
+      { callsign: 'OH6ABC', neighbour: 'OH9SPECIAL', is_wildcard: 0, status: 'VOIMASSA' as const, from_date: '2025-01-01', to_date: 'NOW' },
+    ];
+
+    expect(databaseNeighbour(rows)).toBe('OH9SPECIAL');
+  });
+
   it('merges exact and wildcard history chronologically', () => {
     const rows = [
       { callsign: 'OH*EYA', neighbour: 'OH*EYA', is_wildcard: 1, status: 'KARENSSI' as const, from_date: '2019-10-23', to_date: '2021-10-21' },

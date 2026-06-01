@@ -1,9 +1,8 @@
 import initSqlJs, { type Database, type QueryExecResult } from 'sql.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { neighbour, normalizeCallsign } from './callsign';
-import { currentState, mergedHistory, normalizeOpenStart } from './lookup';
+import { currentState, databaseNeighbour, mergedHistory, normalizeOpenStart } from './lookup';
 import type { ChangeRow, EventRow, LookupResult, Metadata, Status, SuggestionSearchMode, WorkerRequest, WorkerResponse } from './types';
-
 
 let db: Database | null = null;
 
@@ -41,13 +40,20 @@ async function handleRequest(request: WorkerRequest): Promise<unknown> {
 
 function lookupCallsign(database: Database, value: string): LookupResult {
   const callsign = normalizeCallsign(value);
-  const wildcard = neighbour(callsign);
-  const historyRows = rows<EventRow>(database.exec(
+  const exactRows = rows<EventRow>(database.exec(
     `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date
        FROM event
-      WHERE callsign = ? OR callsign = ?`,
-    [callsign, wildcard],
+      WHERE callsign = ?`,
+    [callsign],
   ));
+  const wildcard = databaseNeighbour(exactRows) ?? neighbour(callsign);
+  const wildcardRows = wildcard === callsign ? [] : rows<EventRow>(database.exec(
+    `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date
+       FROM event
+      WHERE callsign = ?`,
+    [wildcard],
+  ));
+  const historyRows = [...exactRows, ...wildcardRows];
   const related = rows<EventRow>(database.exec(
     `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date
        FROM event

@@ -2,6 +2,10 @@ import type { CurrentState, EventRow } from './types';
 
 const GENESIS_DATE = '2016-04-23';
 
+export function databaseNeighbour(rows: EventRow[]): string | null {
+  return rows.map((row) => row.neighbour).find((value) => value.length > 0) ?? null;
+}
+
 export function mergedHistory(rows: EventRow[]): EventRow[] {
   return rows.map(normalizeOpenStart).sort(compareEvents);
 }
