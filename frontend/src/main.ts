@@ -263,7 +263,7 @@ function renderChanges(rows: ChangeRow[]): string {
             <td>${statusText(row.status)}</td>
             <td>${displayStart(row)}</td>
             <td>${displayEnd(row)}</td>
-            <td>${formatDuration(row.from_date, row.duration_end_date, t, row.from_date_estimated)}</td>
+            <td>${renderChangeDuration(row)}</td>
           </tr>`).join('')}</tbody>
       </table>
     </div>
@@ -277,6 +277,11 @@ function loadChanges(): Promise<void> {
     changesHasMore = result.hasMore;
     render();
   });
+}
+
+function renderChangeDuration(row: ChangeRow): string {
+  if (row.to_date === 'NOW') return '–';
+  return formatDuration(row.from_date, row.duration_end_date, messages(language), row.from_date_estimated);
 }
 
 function renderCurrentDates(current: { from_date: string | null; from_date_estimated?: boolean; to_date: string | null }): string {
