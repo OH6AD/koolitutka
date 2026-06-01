@@ -281,7 +281,7 @@ function loadChanges(): Promise<void> {
 
 function renderChangeDuration(row: ChangeRow): string {
   if (row.to_date === 'NOW') return '–';
-  return formatDuration(row.from_date, row.duration_end_date, messages(language), row.from_date_estimated);
+  return formatDuration(row.from_date, row.duration_end_date, messages(language), row.from_date_estimated, 'nearest');
 }
 
 function renderCurrentDates(current: { from_date: string | null; from_date_estimated?: boolean; to_date: string | null }): string {
