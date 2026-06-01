@@ -59,6 +59,12 @@ npm run build
 This runs the database export first and then writes the final files to
 `public/`.
 
+The built frontend uses relative paths, so `public/` can be served from a domain
+root or from a subdirectory such as `/koolitutka/`. Copy the whole contents of
+`public/` together and keep the generated file layout intact so `index.html`,
+`koolitutka.sqlite`, `tuulikotka.png`, and `assets/` stay in the same directory
+tree. No runtime path configuration is needed for normal static hosting.
+
 ## Tests
 
 Run the frontend tests with:

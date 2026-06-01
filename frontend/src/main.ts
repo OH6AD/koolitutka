@@ -37,7 +37,7 @@ window.addEventListener('hashchange', () => {
 });
 
 render();
-db.init('/koolitutka.sqlite')
+db.init(new URL('koolitutka.sqlite', document.baseURI).toString())
   .then((data) => {
     metadata = data;
     isLoading = false;
