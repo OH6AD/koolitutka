@@ -16,8 +16,7 @@ const DATA_SOURCE_URL = 'https://github.com/OH6AD/koolit';
 const db = new DbClient();
 const initialRoute = parseRouteHash(location.hash);
 const savedLanguage = localStorage.getItem('language');
-let language: Language = initialRoute.language
-  ?? (savedLanguage && languages.includes(savedLanguage as Language) ? savedLanguage as Language : null)
+let language: Language = (savedLanguage && languages.includes(savedLanguage as Language) ? savedLanguage as Language : null)
   ?? pickLanguage(navigator.languages);
 let dateStart = initialRoute.start ?? daysAgoIso(7);
 let dateEnd = initialRoute.end ?? todayIso();
@@ -64,7 +63,7 @@ function render(): void {
         <label class="language">
           <span>${t.language}</span>
           <select id="language-select">
-            ${languages.map((option) => `<option value="${option}" ${option === language ? 'selected' : ''}>${option.toUpperCase()}</option>`).join('')}
+            ${languages.map((option) => `<option value="${option}" ${option === language ? 'selected' : ''}>${option}</option>`).join('')}
           </select>
         </label>
       </header>
@@ -115,7 +114,6 @@ function bindEvents(): void {
   document.querySelector<HTMLSelectElement>('#language-select')?.addEventListener('change', (event) => {
     language = (event.currentTarget as HTMLSelectElement).value as Language;
     localStorage.setItem('language', language);
-    syncRoute();
     render();
   });
 
@@ -300,18 +298,17 @@ function applyRouteState(): Promise<void> {
 }
 
 function callsignHash(callsign: string): string {
-  return buildRouteHash({ q: callsign, start: dateStart, end: dateEnd, language });
+  return buildRouteHash({ q: callsign, start: dateStart, end: dateEnd });
 }
 
 function syncRoute(): void {
-  const hash = buildRouteHash({ q: lastLookup?.callsign ?? pendingLookup, start: dateStart, end: dateEnd, language });
+  const hash = buildRouteHash({ q: lastLookup?.callsign ?? pendingLookup, start: dateStart, end: dateEnd });
   if (location.hash !== hash) history.replaceState(null, '', hash);
 }
 
 function applyHash(hash: string): void {
   const route = parseRouteHash(hash);
   const previousLookup = pendingLookup;
-  language = route.language ?? language;
   dateStart = route.start ?? daysAgoIso(7);
   dateEnd = route.end ?? todayIso();
   pendingLookup = route.q;

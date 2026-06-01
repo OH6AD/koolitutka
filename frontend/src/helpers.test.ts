@@ -76,14 +76,13 @@ describe('lookup history', () => {
 
 
 describe('hash routing', () => {
-  it('parses and builds shareable route state', () => {
+  it('parses and builds shareable route state without language preference', () => {
     expect(parseRouteHash('#q=oh2ad&start=2026-05-01&end=2026-05-30&lang=sv')).toEqual({
       q: 'OH2AD',
       start: '2026-05-01',
       end: '2026-05-30',
-      language: 'sv',
     });
-    expect(buildRouteHash({ q: 'oh2ad', start: '2026-05-01', end: '2026-05-30', language: 'en' })).toBe('#q=OH2AD&start=2026-05-01&end=2026-05-30&lang=en');
+    expect(buildRouteHash({ q: 'oh2ad', start: '2026-05-01', end: '2026-05-30' })).toBe('#q=OH2AD&start=2026-05-01&end=2026-05-30');
   });
 });
 
