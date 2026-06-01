@@ -56,7 +56,7 @@ const translations = {
   },
   sv: {
     appTitle: 'Koolitutka',
-    appSubtitle: 'Status och historik för radioamatöranropssignaler',
+    appSubtitle: 'Status och historik för radioamatöranropssignaler i Finland',
     searchLabel: 'Anropssignal',
     searchPlaceholder: 'T.ex. OH2AD',
     searchButton: 'Sök',
@@ -109,7 +109,7 @@ const translations = {
   },
   en: {
     appTitle: 'Koolitutka',
-    appSubtitle: 'Amateur radio callsign status and history',
+    appSubtitle: 'Amateur radio callsign status and history in Finland',
     searchLabel: 'Callsign',
     searchPlaceholder: 'E.g. OH2AD',
     searchButton: 'Search',
