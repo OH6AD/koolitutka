@@ -43,6 +43,12 @@ const translations = {
       KARENSSI: 'Karenssi',
       VAPAA: 'Vapaa',
     } satisfies Record<Status, string>,
+    currentStatusText: {
+      VOIMASSA: 'Voimassa',
+      VARAUS: 'Varaus',
+      KARENSSI: 'Karenssi',
+      VAPAA: 'Vapaa',
+    } satisfies Record<Status, string>,
     days: '{n} pv',
     months: '{n} kk',
     years: '{n} v',
@@ -85,6 +91,12 @@ const translations = {
     validityRules: 'Giltighetsregler',
     footer: 'Koolitutka är gjord av {author}. Källkoden finns på {source}, och data kommer från projektet {dataSource}. Idéer har kommit från OH2LAK Erik och OH3HZB Lasse.',
     statusText: {
+      VOIMASSA: 'Giltighet',
+      VARAUS: 'Reservering',
+      KARENSSI: 'Karenstid',
+      VAPAA: 'Ledig',
+    } satisfies Record<Status, string>,
+    currentStatusText: {
       VOIMASSA: 'I kraft',
       VARAUS: 'Reserverad',
       KARENSSI: 'Karenstid',
@@ -132,6 +144,12 @@ const translations = {
     validityRules: 'Validity rules',
     footer: 'Koolitutka is by {author}. Source code is available at {source}, and data comes from {dataSource}. Ideas came from OH2LAK Erik and OH3HZB Lasse.',
     statusText: {
+      VOIMASSA: 'Validity',
+      VARAUS: 'Reservation',
+      KARENSSI: 'Cooldown',
+      VAPAA: 'Available',
+    } satisfies Record<Status, string>,
+    currentStatusText: {
       VOIMASSA: 'Active',
       VARAUS: 'Reserved',
       KARENSSI: 'Cooldown',

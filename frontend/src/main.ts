@@ -202,7 +202,7 @@ function renderLookup(result: LookupResult): string {
           <h2>${t.currentStatus}</h2>
           <button id="close-lookup" class="icon-button" type="button" aria-label="${t.close}" title="${t.close}">×</button>
         </div>
-        <div class="status-line">${current.callsign}: ${statusText(current.status)}</div>
+        <div class="status-line">${current.callsign}: ${currentStatusText(current.status)}</div>
         ${renderCurrentDates(current)}
         ${renderNoHistoryNotice(result)}
       </article>
@@ -345,6 +345,10 @@ function displayEnd(row: { to_date: string }): string {
 
 function statusText(status: Status): string {
   return messages(language).statusText[status];
+}
+
+function currentStatusText(status: Status): string {
+  return messages(language).currentStatusText[status];
 }
 
 function showError(reason: unknown): void {
