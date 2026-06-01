@@ -55,12 +55,21 @@ function lookupCallsign(database: Database, value: string): LookupResult {
   ));
   const historyRows = [...exactRows, ...wildcardRows];
   const related = rows<EventRow>(database.exec(
-    `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date
-       FROM event
-      WHERE callsign != ?
-        AND callsign != ?
-        AND neighbour = ?
-      ORDER BY is_wildcard DESC, callsign, COALESCE(from_date, ''), to_date`,
+    `WITH ranked AS (
+       SELECT callsign, neighbour, is_wildcard, status, from_date, to_date,
+              row_number() OVER (
+                PARTITION BY callsign
+                ORDER BY COALESCE(from_date, '') DESC, to_date DESC
+              ) AS rn
+         FROM event
+        WHERE callsign != ?
+          AND callsign != ?
+          AND neighbour = ?
+     )
+     SELECT callsign, neighbour, is_wildcard, status, from_date, to_date
+       FROM ranked
+      WHERE rn = 1
+      ORDER BY callsign`,
     [callsign, wildcard, wildcard],
   ));
 
@@ -68,7 +77,7 @@ function lookupCallsign(database: Database, value: string): LookupResult {
     callsign,
     current: currentState(callsign, historyRows),
     history: mergedHistory(historyRows),
-    related: related.filter((row) => row.to_date === 'NOW').map(normalizeOpenStart),
+    related: related.map(normalizeOpenStart),
   };
 }
 
