@@ -45,8 +45,8 @@ const translations = {
     } satisfies Record<Status, string>,
     currentStatusText: {
       VOIMASSA: 'Voimassa',
-      VARAUS: 'Varaus',
-      KARENSSI: 'Karenssi',
+      VARAUS: 'Varattu',
+      KARENSSI: 'Karenssissa',
       VAPAA: 'Vapaa',
     } satisfies Record<Status, string>,
     days: '{n} pv',
@@ -99,7 +99,7 @@ const translations = {
     currentStatusText: {
       VOIMASSA: 'I kraft',
       VARAUS: 'Reserverad',
-      KARENSSI: 'Karenstid',
+      KARENSSI: 'I karens',
       VAPAA: 'Ledig',
     } satisfies Record<Status, string>,
     days: '{n} d',
