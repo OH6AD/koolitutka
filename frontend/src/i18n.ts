@@ -127,7 +127,7 @@ const translations = {
     showMore: 'Show more',
     noRows: 'No rows to show.',
     callsign: 'Callsign',
-    status: 'Status',
+    status: 'State',
     startDate: 'Start date',
     since: 'Since',
     endDate: 'End date',
