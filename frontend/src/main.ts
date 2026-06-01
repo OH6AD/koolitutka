@@ -1,6 +1,6 @@
 import './style.css';
 import { DbClient } from './dbClient';
-import { daysAgoIso, formatDuration, todayIso } from './date';
+import { formatDuration, todayIso } from './date';
 import { formatMessage, languages, messages, pickLanguage } from './i18n';
 import { normalizeCallsign } from './callsign';
 import { buildRouteHash, parseRouteHash } from './route';
@@ -18,8 +18,9 @@ const initialRoute = parseRouteHash(location.hash);
 const savedLanguage = localStorage.getItem('language');
 let language: Language = (savedLanguage && languages.includes(savedLanguage as Language) ? savedLanguage as Language : null)
   ?? pickLanguage(navigator.languages);
-let dateStart = initialRoute.start ?? daysAgoIso(7);
-let dateEnd = initialRoute.end ?? todayIso();
+let changesDate = initialRoute.date ?? todayIso();
+let changesLimit = 20;
+let changesHasMore = false;
 let pendingLookup = initialRoute.q;
 let prefixSearchOnly = parsePrefixSearchOnly(localStorage.getItem(PREFIX_SEARCH_ONLY_KEY));
 let metadata: Metadata | null = null;
@@ -39,6 +40,7 @@ render();
 db.init(new URL('koolitutka.sqlite', document.baseURI).toString())
   .then((data) => {
     metadata = data;
+    if (initialRoute.date === null) changesDate = metadata.updated || todayIso();
     isLoading = false;
     syncRoute();
     return applyRouteState();
@@ -86,10 +88,8 @@ function render(): void {
         <div class="section-header">
           <h2>${t.changes}</h2>
           <form id="changes-form" class="date-form">
-            <label>${t.from}<input type="date" id="start-date" value="${dateStart}" /></label>
-            <label>${t.to}<input type="date" id="end-date" value="${dateEnd}" /></label>
+            <label>${t.until}<input type="date" id="changes-date" value="${changesDate}" /></label>
             <button type="submit">${t.update}</button>
-            <button id="last-seven-days" class="secondary-button" type="button">${t.lastSevenDays}</button>
           </form>
         </div>
         ${renderChanges(changes)}
@@ -140,16 +140,14 @@ function bindEvents(): void {
 
   document.querySelector<HTMLFormElement>('#changes-form')?.addEventListener('submit', (event) => {
     event.preventDefault();
-    dateStart = document.querySelector<HTMLInputElement>('#start-date')?.value || dateStart;
-    dateEnd = document.querySelector<HTMLInputElement>('#end-date')?.value || dateEnd;
+    changesDate = document.querySelector<HTMLInputElement>('#changes-date')?.value || changesDate;
+    changesLimit = 20;
     syncRoute();
     loadChanges().catch(showError);
   });
 
-  document.querySelector<HTMLButtonElement>('#last-seven-days')?.addEventListener('click', () => {
-    dateStart = daysAgoIso(7);
-    dateEnd = todayIso();
-    syncRoute();
+  document.querySelector<HTMLButtonElement>('#show-more-changes')?.addEventListener('click', () => {
+    changesLimit += 20;
     loadChanges().catch(showError);
   });
 
@@ -258,12 +256,14 @@ function renderChanges(rows: ChangeRow[]): string {
           </tr>`).join('')}</tbody>
       </table>
     </div>
+    ${changesHasMore ? `<div class="changes-actions"><button id="show-more-changes" class="secondary-button" type="button">${t.showMore}</button></div>` : ''}
   `;
 }
 
 function loadChanges(): Promise<void> {
-  return db.listChanges(dateStart, dateEnd).then((rows) => {
-    changes = rows;
+  return db.listChanges(changesDate, changesLimit).then((result) => {
+    changes = result.rows;
+    changesHasMore = result.hasMore;
     render();
   });
 }
@@ -298,19 +298,19 @@ function applyRouteState(): Promise<void> {
 }
 
 function callsignHash(callsign: string): string {
-  return buildRouteHash({ q: callsign, start: dateStart, end: dateEnd });
+  return buildRouteHash({ q: callsign, date: changesDate });
 }
 
 function syncRoute(): void {
-  const hash = buildRouteHash({ q: lastLookup?.callsign ?? pendingLookup, start: dateStart, end: dateEnd });
+  const hash = buildRouteHash({ q: lastLookup?.callsign ?? pendingLookup, date: changesDate });
   if (location.hash !== hash) history.replaceState(null, '', hash);
 }
 
 function applyHash(hash: string): void {
   const route = parseRouteHash(hash);
   const previousLookup = pendingLookup;
-  dateStart = route.start ?? daysAgoIso(7);
-  dateEnd = route.end ?? todayIso();
+  changesDate = route.date ?? metadata?.updated ?? todayIso();
+  changesLimit = 20;
   pendingLookup = route.q;
   applyRouteState().then(() => {
     if (pendingLookup !== null && pendingLookup !== previousLookup) window.scrollTo({ top: 0, behavior: 'smooth' });

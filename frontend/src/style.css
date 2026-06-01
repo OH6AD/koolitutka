@@ -114,6 +114,7 @@ button {
 .status-note a { color: var(--accent); font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 
 .changes-panel { margin-top: 16px; }
+.changes-actions { margin-top: 12px; }
 .section-header {
   display: flex;
   justify-content: space-between;

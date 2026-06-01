@@ -33,6 +33,11 @@ export interface ChangeRow extends EventRow {
   duration_end_date: string | null;
 }
 
+export interface ChangeListResult {
+  rows: ChangeRow[];
+  hasMore: boolean;
+}
+
 export interface Metadata {
   schema_version: string;
   genesis: string;
@@ -43,7 +48,7 @@ export type WorkerRequest =
   | { id: number; type: 'init'; dbUrl: string }
   | { id: number; type: 'lookupCallsign'; callsign: string }
   | { id: number; type: 'searchSuggestions'; query: string; mode: SuggestionSearchMode; limit: number }
-  | { id: number; type: 'listChanges'; start: string; end: string }
+  | { id: number; type: 'listChanges'; date: string; limit: number }
   | { id: number; type: 'getMetadata' };
 
 export type WorkerResponse =

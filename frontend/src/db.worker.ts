@@ -2,10 +2,12 @@ import initSqlJs, { type Database, type QueryExecResult } from 'sql.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { neighbour, normalizeCallsign } from './callsign';
 import { currentState, databaseNeighbour, mergedHistory, normalizeOpenStart } from './lookup';
-import type { ChangeRow, EventRow, LookupResult, Metadata, Status, SuggestionSearchMode, WorkerRequest, WorkerResponse } from './types';
+import type { ChangeListResult, ChangeRow, EventRow, LookupResult, Metadata, Status, SuggestionSearchMode, WorkerRequest, WorkerResponse } from './types';
 
 let db: Database | null = null;
 let metadata: Metadata | null = null;
+
+type ChangeEventRow = EventRow & { change_date: string; change_type: 'start' | 'end' };
 
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   const request = event.data;
@@ -34,7 +36,7 @@ async function handleRequest(request: WorkerRequest): Promise<unknown> {
     case 'searchSuggestions':
       return searchSuggestions(database, request.query, request.mode, request.limit);
     case 'listChanges':
-      return listChanges(database, request.start, request.end);
+      return listChanges(database, request.date, request.limit);
     case 'getMetadata':
       return getMetadata();
   }
@@ -114,27 +116,31 @@ function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (character) => `\\${character}`);
 }
 
-function listChanges(database: Database, start: string, end: string): ChangeRow[] {
+function listChanges(database: Database, date: string, limit: number): ChangeListResult {
   const genesis = requireMetadata().genesis;
-  const started = rows<EventRow>(database.exec(
-    `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date
-       FROM event
-      WHERE from_date IS NOT NULL
-        AND from_date BETWEEN ? AND ?`,
-    [start, end],
-  )).map((row) => changeRow(normalizeOpenStart(row, genesis), row.from_date ?? start, 'start', end));
-
-  const ended = rows<EventRow>(database.exec(
-    `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date
-       FROM event
-      WHERE to_date != 'NOW'
-        AND to_date BETWEEN ? AND ?`,
-    [start, end],
-  )).map((row) => changeRow(normalizeOpenStart(row, genesis), row.to_date, 'end', end));
-
-  return [...started, ...ended].sort((a, b) => b.change_date.localeCompare(a.change_date) || a.callsign.localeCompare(b.callsign));
+  const queryLimit = limit + 1;
+  const result = rows<ChangeEventRow>(database.exec(
+    `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date, change_date, change_type
+       FROM (
+         SELECT callsign, neighbour, is_wildcard, status, from_date, to_date,
+                from_date AS change_date, 'start' AS change_type
+           FROM event
+          WHERE from_date IS NOT NULL
+            AND from_date <= ?
+         UNION ALL
+         SELECT callsign, neighbour, is_wildcard, status, from_date, to_date,
+                to_date AS change_date, 'end' AS change_type
+           FROM event
+          WHERE to_date != 'NOW'
+            AND to_date <= ?
+       )
+      ORDER BY change_date DESC, callsign ASC
+      LIMIT ?`,
+    [date, date, queryLimit],
+  ));
+  const changes = result.map((row) => changeRow(normalizeOpenStart(row, genesis), row.change_date, row.change_type, date));
+  return { rows: changes.slice(0, limit), hasMore: changes.length > limit };
 }
-
 function changeRow(row: EventRow, changeDate: string, changeType: 'start' | 'end', rangeEnd: string): ChangeRow {
   return {
     ...row,
