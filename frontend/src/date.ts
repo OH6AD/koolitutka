@@ -24,6 +24,16 @@ export function daysBetween(start: string | null, end: string | null): number | 
   return Math.max(0, Math.round((endMs - startMs) / DAY_MS));
 }
 
+export function addYearsIso(value: string, years: number): string | null {
+  const date = parseIsoDate(value);
+  if (!date) return null;
+  const targetYear = date.getUTCFullYear() + years;
+  const month = date.getUTCMonth();
+  const day = date.getUTCDate();
+  const lastDay = new Date(Date.UTC(targetYear, month + 1, 0)).getUTCDate();
+  return toIsoDate(new Date(Date.UTC(targetYear, month, Math.min(day, lastDay))));
+}
+
 export function formatDuration(start: string | null, end: string | null, t: Messages, estimatedStart = false, rounding: 'floor' | 'nearest' = 'floor'): string {
   if (start === null || end === null) return '';
   const startDate = parseIsoDate(start);

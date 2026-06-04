@@ -1,11 +1,11 @@
 import './style.css';
 import { DbClient } from './dbClient';
-import { formatDuration, todayIso } from './date';
+import { addYearsIso, formatDuration, todayIso } from './date';
 import { formatMessage, languages, messages, pickLanguage } from './i18n';
 import { normalizeCallsign } from './callsign';
 import { buildRouteHash, parseRouteHash } from './route';
 import { parsePrefixSearchOnly } from './searchMode';
-import type { ChangeRow, EventRow, Language, LookupResult, Metadata, Status } from './types';
+import type { ChangeRow, CurrentState, EventRow, Language, LookupResult, Metadata, Status } from './types';
 
 const VALIDITY_RULES_URL = 'https://oh2ti.fi/wp-content/uploads/2023/05/PRK-RA2023_L1-L2_K-moduuli.pdf#page=9';
 const PREFIX_SEARCH_ONLY_KEY = 'prefixSearchOnly';
@@ -284,7 +284,7 @@ function renderChangeDuration(row: ChangeRow): string {
   return formatDuration(row.from_date, row.duration_end_date, messages(language), row.from_date_estimated, 'nearest');
 }
 
-function renderCurrentDates(current: { from_date: string | null; from_date_estimated?: boolean; to_date: string | null }): string {
+function renderCurrentDates(current: CurrentState): string {
   const t = messages(language);
   const rows = [];
   if (current.from_date) rows.push(`<p>${t.since}: ${displayStart(current)}</p>`);
@@ -292,6 +292,13 @@ function renderCurrentDates(current: { from_date: string | null; from_date_estim
   const end = current.to_date ?? todayIso();
   const duration = formatDuration(current.from_date, end, t, current.from_date_estimated);
   if (duration) rows.push(`<p>${t.duration}: ${duration}</p>`);
+  if (current.status === 'KARENSSI' && current.from_date) {
+    const estimatedAvailability = addYearsIso(current.from_date, 2);
+    if (estimatedAvailability) {
+      const remainingDuration = formatDuration(todayIso(), estimatedAvailability, t, false, 'nearest');
+      rows.push(`<p>${t.estimatedAvailability}: ${estimatedAvailability}${remainingDuration ? ` (${remainingDuration})` : ''}</p>`);
+    }
+  }
   return rows.join('');
 }
 
