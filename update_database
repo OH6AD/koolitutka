@@ -14,7 +14,7 @@ if ($config === FALSE) {
 $config = (object)$config;
 $config->git = (object)$config->git;
 $file = 'oh-callsigns.tsv';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 // Check if we need to create a database
 $init_db = !file_exists($config->database);
@@ -225,6 +225,7 @@ while (TRUE) {
     // finishing transaction!
     db_execute($insert_end_commit, [$hash, $date]);
     $db->exec('END');
+    $genesis = false;
 
     print("OK".
           report("mangles",$mangles).

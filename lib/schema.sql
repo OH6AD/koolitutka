@@ -15,6 +15,8 @@ CREATE TABLE event (
 -- Used by the engine itself
 CREATE INDEX ix_status_callsign ON event(status, callsign, to_date);
 CREATE INDEX ix_current ON event(to_date, status);
+-- Only one state per callsign can be inherited from the pre-genesis snapshot.
+CREATE UNIQUE INDEX ux_event_unknown_start_callsign ON event(callsign) WHERE from_date IS NULL;
 
 -- Useful indices for common operations
 CREATE INDEX ix_callsign_date ON event(callsign, to_date);
@@ -27,6 +29,6 @@ CREATE TABLE updates (
 	authored TEXT NOT NULL -- Date of the data
 );
 
-PRAGMA user_version = 2;
+PRAGMA user_version = 3;
 
 END;

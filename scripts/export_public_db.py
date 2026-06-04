@@ -5,26 +5,32 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'db.sqlite'
 TARGET = ROOT / 'frontend' / 'static' / 'koolitutka.sqlite'
-SCHEMA_VERSION = '2'
+SCHEMA_VERSION = '3'
 
 
 def main() -> None:
     if not SOURCE.exists():
         raise SystemExit(f'Missing source database: {SOURCE}')
 
-    TARGET.parent.mkdir(parents=True, exist_ok=True)
-    tmp = TARGET.with_suffix('.tmp.sqlite')
-    if tmp.exists():
-        tmp.unlink()
-
     source = sqlite3.connect(f'file:{SOURCE}?mode=ro', uri=True)
-    target = sqlite3.connect(tmp)
     try:
-        build_database(source, target)
-        target.execute('VACUUM')
+        source_version = source.execute('PRAGMA user_version').fetchone()[0]
+        if source_version != int(SCHEMA_VERSION):
+            raise SystemExit(f'Source database schema version is {source_version}, expected {SCHEMA_VERSION}; run update_database first')
+
+        TARGET.parent.mkdir(parents=True, exist_ok=True)
+        tmp = TARGET.with_suffix('.tmp.sqlite')
+        if tmp.exists():
+            tmp.unlink()
+
+        target = sqlite3.connect(tmp)
+        try:
+            build_database(source, target)
+            target.execute('VACUUM')
+        finally:
+            target.close()
     finally:
         source.close()
-        target.close()
 
     tmp.replace(TARGET)
     print(f'Wrote {TARGET.relative_to(ROOT)}')
