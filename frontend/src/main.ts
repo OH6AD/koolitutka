@@ -94,9 +94,11 @@ function render(): void {
               <legend>${t.status}</legend>
               ${EVENT_STATUSES.map((status) => `<label><input type="checkbox" data-change-status="${status}" ${changesStates.includes(status) ? 'checked' : ''} />${statusText(status)}</label>`).join('')}
             </fieldset>
-            <label>${t.until}<input type="date" id="changes-date" value="${changesDate}" /></label>
-            <button type="submit">${t.update}</button>
-            <button id="show-newest-changes" class="secondary-button" type="button">${t.showNewest}</button>
+            <div class="changes-date-actions">
+              <label class="changes-date-label">${t.until}<input type="date" id="changes-date" value="${changesDate}" /></label>
+              <button type="submit">${t.update}</button>
+              <button id="show-newest-changes" class="secondary-button" type="button">${t.showNewest}</button>
+            </div>
           </form>
         </div>
         ${renderChanges(changes)}
