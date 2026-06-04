@@ -59,7 +59,7 @@ h2 { margin: 0 0 12px; font-size: 1.1rem; letter-spacing: 0; }
 }
 p { margin: 0; }
 .topbar p, .metadata, .empty { color: var(--muted); }
-.metadata { margin-bottom: 16px; }
+.metadata { margin-bottom: 16px; margin-top: 0.2em; }
 
 .language { display: flex; gap: 8px; align-items: center; color: var(--muted); }
 .language select, input {
@@ -150,9 +150,12 @@ th { color: var(--muted); font-weight: 600; }
 .footer { margin-top: 28px; color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
 .footer a { color: var(--accent); font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 
+@media (max-width: 600px) {
+  .topbar, .section-header { display: grid; }
+}
+
 @media (max-width: 760px) {
   .shell { width: min(100% - 20px, 1180px); padding-top: 18px; }
-  .topbar, .section-header { display: grid; }
   .lookup-grid { grid-template-columns: 1fr; display: unset; }
   .lookup-grid article { margin-top: 16px; }
   .lookup-grid article:last-child { grid-column: auto; }
