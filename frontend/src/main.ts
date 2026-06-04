@@ -1,6 +1,6 @@
 import './style.css';
 import { DbClient } from './dbClient';
-import { addYearsIso, formatDuration, todayIso } from './date';
+import { addYearsIso, formatDuration, formatStartDate, todayIso } from './date';
 import { formatMessage, languages, messages, pickLanguage } from './i18n';
 import { normalizeCallsign } from './callsign';
 import { buildRouteHash, parseRouteHash } from './route';
@@ -357,8 +357,7 @@ function applyHash(hash: string): void {
 }
 
 function displayStart(row: { from_date: string | null; from_date_estimated?: boolean }): string {
-  if (row.from_date === null) return '';
-  return row.from_date_estimated ? `< ${row.from_date}` : row.from_date;
+  return formatStartDate(row.from_date, row.from_date_estimated);
 }
 
 function displayEnd(row: { to_date: string }): string {

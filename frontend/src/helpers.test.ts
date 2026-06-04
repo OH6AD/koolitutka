@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeCallsign, neighbour } from './callsign';
-import { addYearsIso, daysBetween, formatDuration } from './date';
+import { addYearsIso, daysBetween, formatDuration, formatStartDate } from './date';
 import { messages, pickLanguage } from './i18n';
 import { currentState, databaseNeighbour, mergedHistory } from './lookup';
 import { buildRouteHash, parseRouteHash } from './route';
@@ -29,6 +29,12 @@ describe('duration formatting', () => {
     expect(addYearsIso('invalid', 2)).toBeNull();
   });
 
+  it('formats inclusive estimated start dates', () => {
+    expect(formatStartDate('2016-04-22', true)).toBe('≤ 2016-04-22');
+    expect(formatStartDate('2016-04-22')).toBe('2016-04-22');
+    expect(formatStartDate(null, true)).toBe('');
+  });
+
   it('formats days, months, and years', () => {
     expect(daysBetween('2026-05-01', '2026-05-10')).toBe(9);
     expect(formatDuration('2026-05-01', '2026-05-10', t)).toBe('9 d');
@@ -39,7 +45,8 @@ describe('duration formatting', () => {
     expect(formatDuration('2024-06-01', '2026-06-01', t)).toBe('2 y');
     expect(formatDuration('2016-05-26', '2018-05-24', t)).toBe('1 y 11 mo');
     expect(formatDuration('2016-05-26', '2018-05-24', t, false, 'nearest')).toBe('2 y');
-    expect(formatDuration('2016-04-23', '2026-06-01', t, true)).toBe('> 10 y 1 mo');
+    expect(formatDuration('2016-04-23', '2026-06-01', t, true)).toBe('≥ 10 y 1 mo');
+    expect(formatDuration('2016-05-26', '2018-05-24', t, true, 'nearest')).toBe('≥ 1 y 11 mo');
   });
 });
 

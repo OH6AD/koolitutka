@@ -34,15 +34,20 @@ export function addYearsIso(value: string, years: number): string | null {
   return toIsoDate(new Date(Date.UTC(targetYear, month, Math.min(day, lastDay))));
 }
 
+export function formatStartDate(value: string | null, estimated = false): string {
+  if (value === null) return '';
+  return estimated ? `≤ ${value}` : value;
+}
+
 export function formatDuration(start: string | null, end: string | null, t: Messages, estimatedStart = false, rounding: 'floor' | 'nearest' = 'floor'): string {
   if (start === null || end === null) return '';
   const startDate = parseIsoDate(start);
   const endDate = parseIsoDate(end);
   if (!startDate || !endDate) return '';
 
-  const prefix = estimatedStart ? '> ' : '';
+  const prefix = estimatedStart ? '≥ ' : '';
   const days = daysBetween(start, end);
-  const monthsTotal = rounding === 'nearest' ? roundedCalendarMonthsBetween(startDate, endDate) : calendarMonthsBetween(startDate, endDate);
+  const monthsTotal = rounding === 'nearest' && !estimatedStart ? roundedCalendarMonthsBetween(startDate, endDate) : calendarMonthsBetween(startDate, endDate);
   if (monthsTotal < 3) return prefix + t.days.replace('{n}', String(days ?? 0));
   if (monthsTotal < 12) return prefix + t.months.replace('{n}', String(monthsTotal));
 
