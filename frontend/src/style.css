@@ -86,7 +86,10 @@ p { margin: 0; }
 .search-form label, .date-form label { display: grid; gap: 5px; color: var(--muted); }
 .search-form input { min-width: min(360px, 100%); text-transform: uppercase; }
 .search-form .checkbox-label { display: flex; align-items: center; gap: 8px; padding-bottom: 9px; }
-.search-form .checkbox-label input { width: 16px; height: 16px; min-width: 0; padding: 0; accent-color: var(--accent); }
+.search-form .checkbox-label input, .changes-state-filter input { width: 16px; height: 16px; min-width: 0; padding: 0; accent-color: var(--accent); }
+.changes-state-filter { display: flex; align-items: center; gap: 10px; margin: 0; padding: 0 0 9px; border: 0; }
+.changes-state-filter legend { float: left; margin-right: 2px; color: var(--muted); }
+.changes-state-filter label { display: flex; align-items: center; gap: 5px; color: inherit; }
 button {
   border: 0;
   border-radius: 6px;
@@ -142,4 +145,5 @@ th { color: var(--muted); font-weight: 600; }
   .lookup-grid article:last-child { grid-column: auto; }
   .search-form, .date-form { display: grid; align-items: stretch; }
   .search-form input { min-width: 0; }
+  .changes-state-filter { padding-bottom: 0; flex-wrap: wrap; }
 }

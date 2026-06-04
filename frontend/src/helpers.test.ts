@@ -96,9 +96,21 @@ describe('hash routing', () => {
     expect(parseRouteHash('#q=oh2ad&date=2026-05-30&lang=sv')).toEqual({
       q: 'OH2AD',
       date: '2026-05-30',
+      states: ['VOIMASSA', 'VARAUS', 'KARENSSI'],
     });
     expect(buildRouteHash({ q: 'oh2ad', date: '2026-05-30' })).toBe('#q=OH2AD&date=2026-05-30');
     expect(buildRouteHash({ q: 'oh2ad', date: null })).toBe('#q=OH2AD');
+  });
+
+  it('parses and builds Changes state filters', () => {
+    expect(parseRouteHash('#states=KARENSSI,VOIMASSA,UNKNOWN')).toEqual({
+      q: null,
+      date: null,
+      states: ['VOIMASSA', 'KARENSSI'],
+    });
+    expect(parseRouteHash('#states=')).toEqual({ q: null, date: null, states: [] });
+    expect(buildRouteHash({ states: ['KARENSSI', 'VOIMASSA'] })).toBe('#states=VOIMASSA%2CKARENSSI');
+    expect(buildRouteHash({ states: [] })).toBe('#states=');
   });
 });
 

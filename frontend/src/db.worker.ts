@@ -2,7 +2,7 @@ import initSqlJs, { type Database, type QueryExecResult } from 'sql.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { neighbour, normalizeCallsign } from './callsign';
 import { currentState, databaseNeighbour, mergedHistory, normalizeOpenStart } from './lookup';
-import type { ChangeListResult, ChangeRow, EventRow, LookupResult, Metadata, Status, SuggestionSearchMode, WorkerRequest, WorkerResponse } from './types';
+import type { ChangeListResult, ChangeRow, EventRow, EventStatus, LookupResult, Metadata, Status, SuggestionSearchMode, WorkerRequest, WorkerResponse } from './types';
 
 let db: Database | null = null;
 let metadata: Metadata | null = null;
@@ -36,7 +36,7 @@ async function handleRequest(request: WorkerRequest): Promise<unknown> {
     case 'searchSuggestions':
       return searchSuggestions(database, request.query, request.mode, request.limit);
     case 'listChanges':
-      return listChanges(database, request.date, request.limit);
+      return listChanges(database, request.date, request.statuses, request.limit);
     case 'getMetadata':
       return getMetadata();
   }
@@ -91,7 +91,7 @@ function searchSuggestions(database: Database, value: string, mode: SuggestionSe
   if (query.length === 0) return [];
   const condition = mode === 'prefix' ? 'callsign BETWEEN ? AND ?' : "callsign LIKE ? ESCAPE '\\'";
   const parameters = mode === 'prefix' ? [query, `${query}~`, limit * 4] : [`%${escapeLike(query)}%`, limit * 8];
-  const result = rows<{ callsign: string; status: Exclude<Status, 'VAPAA'>; to_date: string }>(database.exec(
+  const result = rows<{ callsign: string; status: EventStatus; to_date: string }>(database.exec(
     `SELECT callsign, status, to_date
        FROM event
       WHERE ${condition}
@@ -116,9 +116,11 @@ function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (character) => `\\${character}`);
 }
 
-function listChanges(database: Database, date: string, limit: number): ChangeListResult {
+function listChanges(database: Database, date: string, statuses: EventStatus[], limit: number): ChangeListResult {
+  if (statuses.length === 0) return { rows: [], hasMore: false };
   const genesis = requireMetadata().genesis;
   const queryLimit = limit + 1;
+  const statusPlaceholders = statuses.map(() => '?').join(', ');
   const result = rows<ChangeEventRow>(database.exec(
     `SELECT callsign, neighbour, is_wildcard, status, from_date, to_date, change_date, change_type
        FROM (
@@ -134,9 +136,10 @@ function listChanges(database: Database, date: string, limit: number): ChangeLis
           WHERE to_date != 'NOW'
             AND to_date <= ?
        )
+      WHERE status IN (${statusPlaceholders})
       ORDER BY change_date DESC, callsign ASC
       LIMIT ?`,
-    [date, date, queryLimit],
+    [date, date, ...statuses, queryLimit],
   ));
   const changes = result.map((row) => changeRow(normalizeOpenStart(row, genesis), row.change_date, row.change_type, date));
   return { rows: changes.slice(0, limit), hasMore: changes.length > limit };

@@ -5,7 +5,7 @@ import { formatMessage, languages, messages, pickLanguage } from './i18n';
 import { normalizeCallsign } from './callsign';
 import { buildRouteHash, parseRouteHash } from './route';
 import { parsePrefixSearchOnly } from './searchMode';
-import type { ChangeRow, CurrentState, EventRow, Language, LookupResult, Metadata, Status } from './types';
+import { EVENT_STATUSES, type ChangeRow, type CurrentState, type EventRow, type EventStatus, type Language, type LookupResult, type Metadata, type Status } from './types';
 
 const VALIDITY_RULES_URL = 'https://oh2ti.fi/wp-content/uploads/2023/05/PRK-RA2023_L1-L2_K-moduuli.pdf#page=9';
 const PREFIX_SEARCH_ONLY_KEY = 'prefixSearchOnly';
@@ -20,6 +20,7 @@ let language: Language = (savedLanguage && languages.includes(savedLanguage as L
   ?? pickLanguage(navigator.languages);
 let changesDate = initialRoute.date ?? todayIso();
 let changesDateExplicit = initialRoute.date !== null;
+let changesStates: EventStatus[] = initialRoute.states;
 let changesLimit = 20;
 let changesHasMore = false;
 let pendingLookup = initialRoute.q;
@@ -89,6 +90,10 @@ function render(): void {
         <div class="section-header">
           <h2>${t.changes}</h2>
           <form id="changes-form" class="date-form">
+            <fieldset class="changes-state-filter">
+              <legend>${t.status}</legend>
+              ${EVENT_STATUSES.map((status) => `<label><input type="checkbox" data-change-status="${status}" ${changesStates.includes(status) ? 'checked' : ''} />${statusText(status)}</label>`).join('')}
+            </fieldset>
             <label>${t.until}<input type="date" id="changes-date" value="${changesDate}" /></label>
             <button type="submit">${t.update}</button>
             <button id="show-newest-changes" class="secondary-button" type="button">${t.showNewest}</button>
@@ -155,6 +160,15 @@ function bindEvents(): void {
     changesLimit = 20;
     syncRoute();
     loadChanges().catch(showError);
+  });
+
+  document.querySelectorAll<HTMLInputElement>('[data-change-status]').forEach((checkbox) => {
+    checkbox.addEventListener('change', () => {
+      changesStates = EVENT_STATUSES.filter((status) => document.querySelector<HTMLInputElement>(`[data-change-status="${status}"]`)?.checked);
+      changesLimit = 20;
+      syncRoute();
+      loadChanges().catch(showError);
+    });
   });
 
   document.querySelector<HTMLButtonElement>('#show-more-changes')?.addEventListener('click', () => {
@@ -272,7 +286,7 @@ function renderChanges(rows: ChangeRow[]): string {
 }
 
 function loadChanges(): Promise<void> {
-  return db.listChanges(changesDate, changesLimit).then((result) => {
+  return db.listChanges(changesDate, changesStates, changesLimit).then((result) => {
     changes = result.rows;
     changesHasMore = result.hasMore;
     render();
@@ -321,11 +335,11 @@ function applyRouteState(): Promise<void> {
 }
 
 function callsignHash(callsign: string): string {
-  return buildRouteHash({ q: callsign, date: changesDateExplicit ? changesDate : null });
+  return buildRouteHash({ q: callsign, date: changesDateExplicit ? changesDate : null, states: changesStates });
 }
 
 function syncRoute(): void {
-  const hash = buildRouteHash({ q: lastLookup?.callsign ?? pendingLookup, date: changesDateExplicit ? changesDate : null });
+  const hash = buildRouteHash({ q: lastLookup?.callsign ?? pendingLookup, date: changesDateExplicit ? changesDate : null, states: changesStates });
   if (location.hash !== hash) history.replaceState(null, '', hash);
 }
 
@@ -334,6 +348,7 @@ function applyHash(hash: string): void {
   const previousLookup = pendingLookup;
   changesDateExplicit = route.date !== null;
   changesDate = route.date ?? metadata?.updated ?? todayIso();
+  changesStates = route.states;
   changesLimit = 20;
   pendingLookup = route.q;
   applyRouteState().then(() => {

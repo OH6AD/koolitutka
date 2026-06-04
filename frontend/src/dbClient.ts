@@ -1,4 +1,4 @@
-import type { ChangeListResult, LookupResult, Metadata, SuggestionSearchMode, WorkerRequest, WorkerResponse } from './types';
+import type { ChangeListResult, EventStatus, LookupResult, Metadata, SuggestionSearchMode, WorkerRequest, WorkerResponse } from './types';
 
 export class DbClient {
   private worker = new Worker(new URL('./db.worker.ts', import.meta.url), { type: 'module' });
@@ -27,8 +27,8 @@ export class DbClient {
     return this.request<Array<{ callsign: string; status: string }>>({ type: 'searchSuggestions', query, mode, limit });
   }
 
-  listChanges(date: string, limit: number): Promise<ChangeListResult> {
-    return this.request<ChangeListResult>({ type: 'listChanges', date, limit });
+  listChanges(date: string, statuses: EventStatus[], limit: number): Promise<ChangeListResult> {
+    return this.request<ChangeListResult>({ type: 'listChanges', date, statuses, limit });
   }
 
   private request<T>(message: Omit<WorkerRequest, 'id'>): Promise<T> {

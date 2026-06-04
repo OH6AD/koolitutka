@@ -1,12 +1,14 @@
 export type Language = 'fi' | 'sv' | 'en';
-export type Status = 'VOIMASSA' | 'VARAUS' | 'KARENSSI' | 'VAPAA';
+export const EVENT_STATUSES = ['VOIMASSA', 'VARAUS', 'KARENSSI'] as const;
+export type EventStatus = typeof EVENT_STATUSES[number];
+export type Status = EventStatus | 'VAPAA';
 export type SuggestionSearchMode = 'prefix' | 'anywhere';
 
 export interface EventRow {
   callsign: string;
   neighbour: string;
   is_wildcard: number;
-  status: Exclude<Status, 'VAPAA'>;
+  status: EventStatus;
   from_date: string | null;
   from_date_estimated?: boolean;
   to_date: string;
@@ -48,7 +50,7 @@ export type WorkerRequest =
   | { id: number; type: 'init'; dbUrl: string }
   | { id: number; type: 'lookupCallsign'; callsign: string }
   | { id: number; type: 'searchSuggestions'; query: string; mode: SuggestionSearchMode; limit: number }
-  | { id: number; type: 'listChanges'; date: string; limit: number }
+  | { id: number; type: 'listChanges'; date: string; statuses: EventStatus[]; limit: number }
   | { id: number; type: 'getMetadata' };
 
 export type WorkerResponse =
