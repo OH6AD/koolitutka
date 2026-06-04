@@ -141,7 +141,8 @@ th { color: var(--muted); font-weight: 600; }
 @media (max-width: 760px) {
   .shell { width: min(100% - 20px, 1180px); padding-top: 18px; }
   .topbar, .section-header { display: grid; }
-  .lookup-grid { grid-template-columns: 1fr; }
+  .lookup-grid { grid-template-columns: 1fr; display: unset; }
+  .lookup-grid article { margin-top: 16px; }
   .lookup-grid article:last-child { grid-column: auto; }
   .search-form, .date-form { display: grid; align-items: stretch; }
   .search-form input { min-width: 0; }
