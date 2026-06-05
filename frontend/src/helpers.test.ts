@@ -9,7 +9,8 @@ import { parsePrefixSearchOnly } from './searchMode';
 describe('language selection', () => {
   it('uses supported browser language and falls back to Finnish', () => {
     expect(pickLanguage(['sv-FI'])).toBe('sv');
-    expect(pickLanguage(['de-DE'])).toBe('fi');
+    expect(pickLanguage(['de-DE'])).toBe('de');
+    expect(pickLanguage(['fr-FR'])).toBe('fi');
   });
 });
 

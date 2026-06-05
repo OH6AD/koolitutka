@@ -1,4 +1,4 @@
-export type Language = 'fi' | 'sv' | 'en';
+export type Language = 'fi' | 'sv' | 'en' | 'de';
 export const EVENT_STATUSES = ['VOIMASSA', 'VARAUS', 'KARENSSI'] as const;
 export type EventStatus = typeof EVENT_STATUSES[number];
 export type Status = EventStatus | 'VAPAA';
