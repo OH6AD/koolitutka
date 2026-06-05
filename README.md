@@ -65,10 +65,12 @@ The newest callsign changes can be exported as an EP1 teletext page:
 
 ```sh
 scripts/export_teletext_changes.py db.sqlite teletext-590-03.ep1 --subpage 10/11
+scripts/export_teletext_changes.py db.sqlite teletext-590-03.ep1 --subpage 10/11 --date 2026-06-05
 ```
 
 The output is 24 records of 42 bytes, uses ISO-646-FI character mapping, and
-includes `net.pupu.li/koolitutka/` near the bottom of the page.
+includes `net.pupu.li/koolitutka/` near the bottom of the page. If `--date` is
+not given, the exporter uses the current date in Europe/Helsinki.
 
 ## Callsign difference tool
 

@@ -2,7 +2,7 @@ import argparse
 import importlib.util
 import sqlite3
 import unittest
-from datetime import datetime
+from datetime import date
 from pathlib import Path
 
 
@@ -38,26 +38,39 @@ FIXTURE_CHANGES = [
 class TeletextExportTest(unittest.TestCase):
     def test_renders_fixture_page(self):
         changes = fixture_changes()
-        content = teletext.render_ep1(changes, datetime(2026, 6, 5, 12, 0, 0), '10/11')
+        content = teletext.render_ep1(changes, date(2026, 6, 5), '10/11')
         self.assertEqual(content, FIXTURE_PATH.read_bytes())
 
     def test_fetches_newest_changes_from_database(self):
         path = create_fixture_database()
         try:
-            rows = teletext.fetch_changes(path)
+            rows = teletext.fetch_changes(path, date(2026, 6, 5))
         finally:
             path.unlink()
         self.assertEqual([row.callsign for row in rows], [row[0] for row in FIXTURE_CHANGES])
         self.assertEqual(rows[0].bold, 'f')
         self.assertEqual(rows[4].bold, 't')
 
+    def test_fetches_changes_on_or_before_export_date(self):
+        path = create_fixture_database()
+        try:
+            rows = teletext.fetch_changes(path, date(2026, 6, 2))
+        finally:
+            path.unlink()
+        self.assertEqual([row.callsign for row in rows[:5]], ['OH*FFE', 'OH1AZE', 'OH1OBO', 'OH2EKI', 'OH3MIM'])
+        self.assertNotIn('OH*MIM', [row.callsign for row in rows])
+
     def test_ep1_size_and_offsets(self):
-        content = teletext.render_ep1(fixture_changes(), datetime(2026, 6, 5), '10/11')
+        content = teletext.render_ep1(fixture_changes(), date(2026, 6, 5), '10/11')
         self.assertEqual(len(content), teletext.EP1_SIZE)
         self.assertEqual(teletext.EP1_SIZE, teletext.ROW_COUNT * teletext.ROW_WIDTH)
         self.assertEqual(content[teletext.SUBPAGE_OFFSET:teletext.SUBPAGE_OFFSET + 5], b'10/11')
         self.assertEqual(content[teletext.SHORT_DATE_OFFSET:teletext.SHORT_DATE_OFFSET + 5], b'05.06')
         self.assertEqual(content[teletext.TABLE_OFFSET:teletext.TABLE_OFFSET + 2], b'\x07O')
+
+    def test_ep1_short_date_uses_export_date(self):
+        content = teletext.render_ep1([], date(2026, 7, 5), '10/11')
+        self.assertEqual(content[teletext.SHORT_DATE_OFFSET:teletext.SHORT_DATE_OFFSET + 5], b'05.07')
 
     def test_formats_dates_for_teletext(self):
         self.assertEqual(teletext.format_date('2026-06-05'), '05.06.2026')
@@ -88,6 +101,13 @@ class TeletextExportTest(unittest.TestCase):
             teletext.parse_subpage('1/11')
         with self.assertRaises(argparse.ArgumentTypeError):
             teletext.parse_subpage('010/11')
+
+    def test_export_date_validation(self):
+        self.assertEqual(teletext.parse_export_date('2026-06-05'), date(2026, 6, 5))
+        with self.assertRaises(argparse.ArgumentTypeError):
+            teletext.parse_export_date('05.06.2026')
+        with self.assertRaises(argparse.ArgumentTypeError):
+            teletext.parse_export_date('2026-02-30')
 
 
 def fixture_changes():

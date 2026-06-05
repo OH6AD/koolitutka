@@ -2,7 +2,7 @@
 import argparse
 import sqlite3
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -60,8 +60,9 @@ class Change:
 
 def main() -> None:
     args = parse_args()
-    changes = fetch_changes(args.database)
-    content = render_ep1(changes, datetime.now(HELSINKI), args.subpage)
+    export_date = args.date or today_helsinki()
+    changes = fetch_changes(args.database, export_date)
+    content = render_ep1(changes, export_date, args.subpage)
     write_bytes(args.output, content)
 
 
@@ -70,6 +71,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('database', type=Path, help='Source SQLite database')
     parser.add_argument('output', type=Path, help='Output file, or - for stdout')
     parser.add_argument('--subpage', required=True, type=parse_subpage, help='Five-character subpage indicator')
+    parser.add_argument('--date', type=parse_export_date, help='Show changes on or before this date, in YYYY-MM-DD format')
     return parser.parse_args()
 
 
@@ -79,7 +81,18 @@ def parse_subpage(value: str) -> str:
     return value
 
 
-def fetch_changes(database: Path) -> list[Change]:
+def parse_export_date(value: str) -> date:
+    try:
+        return date.fromisoformat(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError('date must be in YYYY-MM-DD format') from error
+
+
+def today_helsinki() -> date:
+    return datetime.now(HELSINKI).date()
+
+
+def fetch_changes(database: Path, export_date: date) -> list[Change]:
     connection = sqlite3.connect(database)
     try:
         rows = connection.execute(
@@ -96,21 +109,22 @@ def fetch_changes(database: Path) -> list[Change]:
                   FROM event
                  WHERE to_date != 'NOW'
               )
+             WHERE change_date <= ?
              ORDER BY change_date DESC, callsign ASC
              LIMIT ?
             ''',
-            (ENTRY_COUNT,),
+            (export_date.isoformat(), ENTRY_COUNT),
         )
         return [Change(*row) for row in rows]
     finally:
         connection.close()
 
 
-def render_ep1(changes: list[Change], now: datetime, subpage: str) -> bytes:
+def render_ep1(changes: list[Change], export_date: date, subpage: str) -> bytes:
     page = bytearray(b' ' * EP1_SIZE)
     write_static_frame(page)
     write_at(page, SUBPAGE_OFFSET, encode_text(subpage))
-    write_at(page, SHORT_DATE_OFFSET, now.strftime('%d.%m').encode('ascii'))
+    write_at(page, SHORT_DATE_OFFSET, export_date.strftime('%d.%m').encode('ascii'))
 
     table = b''.join(render_change(change) for change in changes[:ENTRY_COUNT])
     table += b' ' * (ENTRY_WIDTH * ENTRY_COUNT - len(table))
