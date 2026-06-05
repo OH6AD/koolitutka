@@ -59,6 +59,13 @@ npm run build
 This runs the database export first and then writes the final files to
 `public/`.
 
+For production deployments, set the canonical site URL so social link previews
+can use absolute Open Graph image and page URLs:
+
+```sh
+VITE_SITE_URL=https://example.fi/koolitutka/ npm run build
+```
+
 The built frontend uses relative paths, so `public/` can be served from a domain
 root or from a subdirectory such as `/koolitutka/`. Copy the whole contents of
 `public/` together and keep the generated file layout intact so `index.html`,
