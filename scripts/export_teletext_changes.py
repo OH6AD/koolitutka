@@ -167,7 +167,7 @@ def render_change(change: Change) -> bytes:
     to_control = TT_CYAN if change.bold == 't' else TT_WHITE
     entry = (
         callsign_colour
-        + field(change.callsign, 9)
+        + callsign_field(change.callsign)
         + TT_WHITE
         + field(status_label(change.status), 4)
         + from_control
@@ -188,6 +188,13 @@ def callsign_control(change: Change) -> bytes:
     if change.bold == 't':
         return TT_RED
     return TT_WHITE
+
+
+def callsign_field(value: str) -> bytes:
+    encoded = encode_text(value)
+    if len(encoded) > 9:
+        encoded = encoded[:8] + b'>'
+    return encoded.ljust(9, b' ')
 
 
 def field(value: str, width: int) -> bytes:

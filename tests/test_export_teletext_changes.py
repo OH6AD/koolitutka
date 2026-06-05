@@ -93,6 +93,23 @@ class TeletextExportTest(unittest.TestCase):
         self.assertEqual(ended[27], teletext.TT_CYAN[0])
         self.assertEqual(cooldown[0], teletext.TT_WHITE[0])
 
+    def test_long_callsign_is_shortened_for_display(self):
+        entry = teletext.render_change(teletext.Change('OH6PYSYKOTONA', 'VOIMASSA', '2020-04-03', '2020-07-20', 'f'))
+        self.assertEqual(len(entry), teletext.ENTRY_WIDTH)
+        self.assertEqual(entry[1:10], b'OH6PYSYK>')
+
+    def test_renders_2020_long_callsign_regression_page(self):
+        path = create_long_callsign_database()
+        try:
+            rows = teletext.fetch_changes(path, date(2020, 4, 3))
+            content = teletext.render_ep1(rows, date(2020, 4, 3), '10/11')
+        finally:
+            path.unlink()
+        self.assertEqual(len(rows), teletext.ENTRY_COUNT)
+        self.assertEqual(len(content), teletext.EP1_SIZE)
+        self.assertIn(b'OH0PYSYK>', content)
+        self.assertIn(b'OH6PYSYK>', content)
+
     def test_subpage_length_validation_only(self):
         self.assertEqual(teletext.parse_subpage('abcde'), 'abcde')
         self.assertEqual(teletext.parse_subpage('10/11'), '10/11')
@@ -118,6 +135,32 @@ def fixture_changes():
 
 
 def create_fixture_database() -> Path:
+    return create_database(FIXTURE_CHANGES)
+
+
+def create_long_callsign_database() -> Path:
+    changes = [
+        ('OH*HRC', 'KARENSSI', '2020-04-03', '2022-04-03'),
+        ('OH0PYSYKOTONA', 'VOIMASSA', '2020-04-03', '2020-07-20'),
+        ('OH0STAYHOME', 'VOIMASSA', '2020-04-03', '2020-07-20'),
+        ('OH1PYSYKOTONA', 'VOIMASSA', '2020-04-03', '2020-07-20'),
+        ('OH1STAYHOME', 'VOIMASSA', '2020-04-03', '2020-07-20'),
+        ('OH2PYSYKOTONA', 'VOIMASSA', '2020-04-03', '2020-07-20'),
+        ('OH2STAYHOME', 'VOIMASSA', '2020-04-03', '2020-07-20'),
+        ('OH3PYSYKOTONA', 'VOIMASSA', '2020-04-03', '2020-07-20'),
+        ('OH3STAYHOME', 'VOIMASSA', '2020-04-03', '2020-07-20'),
+        ('OH4PYSYKOTONA', 'VOIMASSA', '2020-04-03', '2020-07-20'),
+        ('OH4STAYHOME', 'VOIMASSA', '2020-04-03', '2020-07-20'),
+        ('OH5PYSYKOTONA', 'VOIMASSA', '2020-04-03', '2020-07-20'),
+        ('OH5STAYHOME', 'VOIMASSA', '2020-04-03', '2020-07-20'),
+        ('OH6PYSYKOTONA', 'VOIMASSA', '2020-04-03', '2020-07-20'),
+        ('OH6STAYHOME', 'VOIMASSA', '2020-04-03', '2020-07-20'),
+        ('OH7PYSYKOTONA', 'VOIMASSA', '2020-04-03', '2020-07-20'),
+    ]
+    return create_database(changes)
+
+
+def create_database(changes) -> Path:
     path = Path('/tmp/koolitutka-teletext-test.sqlite')
     if path.exists():
         path.unlink()
@@ -137,7 +180,7 @@ def create_fixture_database() -> Path:
         )
         db.executemany(
             'INSERT INTO event VALUES (?, ?, 0, ?, ?, ?)',
-            [(callsign, callsign.replace(callsign[2], '*', 1), status, from_date, to_date) for callsign, status, from_date, to_date in FIXTURE_CHANGES],
+            [(callsign, callsign.replace(callsign[2], '*', 1), status, from_date, to_date) for callsign, status, from_date, to_date in changes],
         )
         db.commit()
     finally:
