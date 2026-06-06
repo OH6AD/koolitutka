@@ -72,6 +72,33 @@ class TeletextExportTest(unittest.TestCase):
         content = teletext.render_ep1([], date(2026, 7, 5), '10/11')
         self.assertEqual(content[teletext.SHORT_DATE_OFFSET:teletext.SHORT_DATE_OFFSET + 5], b'05.07')
 
+    def test_fixture_indicator_counts(self):
+        content = teletext.render_ep1(fixture_changes(), date(2026, 6, 5), '10/11')
+        self.assertEqual(content[teletext.PLUS_BAR_OFFSET:teletext.PLUS_BAR_OFFSET + teletext.PLUS_BAR_WIDTH], b'\x7f' * 3 + b' ' * 12)
+        self.assertEqual(content[teletext.MINUS_BAR_OFFSET:teletext.MINUS_BAR_OFFSET + teletext.MINUS_BAR_WIDTH], b'\x7f' * 4 + b' ' * 11)
+
+    def test_empty_indicator_counts_are_blank(self):
+        content = teletext.render_ep1([], date(2026, 6, 5), '10/11')
+        self.assertEqual(content[teletext.PLUS_BAR_OFFSET:teletext.PLUS_BAR_OFFSET + teletext.PLUS_BAR_WIDTH], b' ' * 15)
+        self.assertEqual(content[teletext.MINUS_BAR_OFFSET:teletext.MINUS_BAR_OFFSET + teletext.MINUS_BAR_WIDTH], b' ' * 15)
+
+    def test_indicator_counts_overflow(self):
+        added = [teletext.Change(f'OH{i}AAA', 'VOIMASSA', '2026-06-05', 'NOW', 'f') for i in range(16)]
+        removed = [teletext.Change(f'OH{i}AAA', 'VOIMASSA', '2026-06-05', '2026-06-06', 't') for i in range(16)]
+        added_content = teletext.render_ep1(added, date(2026, 6, 5), '10/11')
+        removed_content = teletext.render_ep1(removed, date(2026, 6, 5), '10/11')
+        self.assertEqual(added_content[teletext.PLUS_BAR_OFFSET:teletext.PLUS_BAR_OFFSET + teletext.PLUS_BAR_WIDTH], b'\x7f' * 14 + b'>')
+        self.assertEqual(removed_content[teletext.MINUS_BAR_OFFSET:teletext.MINUS_BAR_OFFSET + teletext.MINUS_BAR_WIDTH], b'\x7f' * 14 + b'>')
+
+    def test_indicator_counts_ignore_non_active_rows(self):
+        changes = [
+            teletext.Change('OH1AAA', 'KARENSSI', '2026-06-05', 'NOW', 'f'),
+            teletext.Change('OH2AAA', 'VARAUS', '2026-06-05', '2026-06-06', 't'),
+        ]
+        content = teletext.render_ep1(changes, date(2026, 6, 5), '10/11')
+        self.assertEqual(content[teletext.PLUS_BAR_OFFSET:teletext.PLUS_BAR_OFFSET + teletext.PLUS_BAR_WIDTH], b' ' * 15)
+        self.assertEqual(content[teletext.MINUS_BAR_OFFSET:teletext.MINUS_BAR_OFFSET + teletext.MINUS_BAR_WIDTH], b' ' * 15)
+
     def test_formats_dates_for_teletext(self):
         self.assertEqual(teletext.format_date('2026-06-05'), '05.06.2026')
         self.assertEqual(teletext.format_from_date(None), '   <= 2016')

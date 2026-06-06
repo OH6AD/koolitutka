@@ -14,6 +14,10 @@ ENTRY_WIDTH = 40
 ENTRY_COUNT = 16
 SUBPAGE_OFFSET = 81
 SHORT_DATE_OFFSET = 121
+PLUS_BAR_OFFSET = 65
+PLUS_BAR_WIDTH = 15
+MINUS_BAR_OFFSET = 105
+MINUS_BAR_WIDTH = 15
 
 TT_RED = b'\x01'
 TT_GREEN = b'\x02'
@@ -121,12 +125,14 @@ def fetch_changes(database: Path, export_date: date) -> list[Change]:
 
 
 def render_ep1(changes: list[Change], export_date: date, subpage: str) -> bytes:
+    visible_changes = changes[:ENTRY_COUNT]
     page = bytearray(b' ' * EP1_SIZE)
     write_static_frame(page)
+    write_indicators(page, visible_changes)
     write_at(page, SUBPAGE_OFFSET, encode_text(subpage))
     write_at(page, SHORT_DATE_OFFSET, export_date.strftime('%d.%m').encode('ascii'))
 
-    table = b''.join(render_change(change) for change in changes[:ENTRY_COUNT])
+    table = b''.join(render_change(change) for change in visible_changes)
     table += b' ' * (ENTRY_WIDTH * ENTRY_COUNT - len(table))
     write_at(page, TABLE_OFFSET, table)
 
@@ -147,11 +153,10 @@ def write_static_frame(page: bytearray) -> None:
         + TT_GREEN
         + TT_BLACK_BACKGROUND
         + b'+'
-        + TT_DELETE * 3,
     )
     write_at(page, 80, TT_WHITE)
     write_at(page, 87, TT_NEW_BACKGROUND)
-    write_at(page, 102, TT_RED + TT_BLACK_BACKGROUND + b'-' + TT_DELETE * 4)
+    write_at(page, 102, TT_RED + TT_BLACK_BACKGROUND + b'-')
     write_at(page, 120, TT_CYAN)
     write_at(page, 126, TT_BLUE + TT_NEW_BACKGROUND + TT_WHITE + encode_text(' Muutokset radioamatöörikutsuissa    ') + TT_MAGENTA)
     write_at(page, 168, TT_CONCEAL + TT_FLASH + encode_text('Onnea uusille radioamatööreille!') + TT_STEADY + TT_BLACK_BACKGROUND + b'  ' + TT_YELLOW + b'Kut')
@@ -159,6 +164,19 @@ def write_static_frame(page: bytearray) -> None:
     write_at(page, 886, TT_YELLOW + encode_text('Lyhenteet: VOImassa KARenssi VARaus  '))
     write_at(page, 924, b'  ' + TT_YELLOW + encode_text('Katso lisää: net.pupu.li/koolitutka/   '))
     page[-2:] = b'\x00\x00'
+
+
+def write_indicators(page: bytearray, changes: list[Change]) -> None:
+    added = sum(1 for change in changes if change.status == 'VOIMASSA' and change.bold == 'f')
+    removed = sum(1 for change in changes if change.status == 'VOIMASSA' and change.bold == 't')
+    write_at(page, PLUS_BAR_OFFSET, indicator_bar(added, PLUS_BAR_WIDTH))
+    write_at(page, MINUS_BAR_OFFSET, indicator_bar(removed, MINUS_BAR_WIDTH))
+
+
+def indicator_bar(count: int, width: int) -> bytes:
+    if count <= width:
+        return (TT_DELETE * count).ljust(width, b' ')
+    return TT_DELETE * (width - 1) + b'>'
 
 
 def render_change(change: Change) -> bytes:
