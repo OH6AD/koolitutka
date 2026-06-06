@@ -38,7 +38,7 @@ FIXTURE_CHANGES = [
 class TeletextExportTest(unittest.TestCase):
     def test_renders_fixture_page(self):
         changes = fixture_changes()
-        content = teletext.render_ep1(changes, date(2026, 6, 5), '10/11')
+        content = teletext.render_ep1(changes, date(2026, 6, 5), '10/11', 307187)
         self.assertEqual(content, FIXTURE_PATH.read_bytes())
 
     def test_fetches_newest_changes_from_database(self):
@@ -60,44 +60,33 @@ class TeletextExportTest(unittest.TestCase):
         self.assertEqual([row.callsign for row in rows[:5]], ['OH*FFE', 'OH1AZE', 'OH1OBO', 'OH2EKI', 'OH3MIM'])
         self.assertNotIn('OH*MIM', [row.callsign for row in rows])
 
+    def test_fetches_active_count_as_of_export_date(self):
+        path = create_active_count_database()
+        try:
+            self.assertEqual(teletext.fetch_active_count(path, date(2026, 6, 5)), 3)
+            self.assertEqual(teletext.fetch_active_count(path, date(2026, 6, 4)), 4)
+        finally:
+            path.unlink()
+
     def test_ep1_size_and_offsets(self):
-        content = teletext.render_ep1(fixture_changes(), date(2026, 6, 5), '10/11')
+        content = teletext.render_ep1(fixture_changes(), date(2026, 6, 5), '10/11', 7188)
         self.assertEqual(len(content), teletext.EP1_SIZE)
         self.assertEqual(teletext.EP1_SIZE, teletext.ROW_COUNT * teletext.ROW_WIDTH)
         self.assertEqual(content[teletext.SUBPAGE_OFFSET:teletext.SUBPAGE_OFFSET + 5], b'10/11')
-        self.assertEqual(content[teletext.SHORT_DATE_OFFSET:teletext.SHORT_DATE_OFFSET + 5], b'05.06')
+        self.assertEqual(content[teletext.ACTIVE_COUNT_OFFSET:teletext.ACTIVE_COUNT_OFFSET + teletext.ACTIVE_COUNT_WIDTH], b'  7188 voimassa ')
         self.assertEqual(content[teletext.TABLE_OFFSET:teletext.TABLE_OFFSET + 2], b'\x07O')
 
-    def test_ep1_short_date_uses_export_date(self):
-        content = teletext.render_ep1([], date(2026, 7, 5), '10/11')
-        self.assertEqual(content[teletext.SHORT_DATE_OFFSET:teletext.SHORT_DATE_OFFSET + 5], b'05.07')
+    def test_active_count_word_stays_fixed(self):
+        short_count = teletext.render_ep1([], date(2026, 6, 5), '10/11', 1)
+        longer_count = teletext.render_ep1([], date(2026, 6, 5), '10/11', 7188)
+        self.assertEqual(short_count[71:79], b'voimassa')
+        self.assertEqual(longer_count[71:79], b'voimassa')
+        self.assertEqual(short_count[teletext.ACTIVE_COUNT_OFFSET:teletext.ACTIVE_COUNT_OFFSET + teletext.ACTIVE_COUNT_WIDTH], b'     1 voimassa ')
+        self.assertEqual(longer_count[teletext.ACTIVE_COUNT_OFFSET:teletext.ACTIVE_COUNT_OFFSET + teletext.ACTIVE_COUNT_WIDTH], b'  7188 voimassa ')
 
-    def test_fixture_indicator_counts(self):
-        content = teletext.render_ep1(fixture_changes(), date(2026, 6, 5), '10/11')
-        self.assertEqual(content[teletext.PLUS_BAR_OFFSET:teletext.PLUS_BAR_OFFSET + teletext.PLUS_BAR_WIDTH], b'\x7f' * 3 + b' ' * 12)
-        self.assertEqual(content[teletext.MINUS_BAR_OFFSET:teletext.MINUS_BAR_OFFSET + teletext.MINUS_BAR_WIDTH], b'\x7f' * 4 + b' ' * 11)
-
-    def test_empty_indicator_counts_are_blank(self):
-        content = teletext.render_ep1([], date(2026, 6, 5), '10/11')
-        self.assertEqual(content[teletext.PLUS_BAR_OFFSET:teletext.PLUS_BAR_OFFSET + teletext.PLUS_BAR_WIDTH], b' ' * 15)
-        self.assertEqual(content[teletext.MINUS_BAR_OFFSET:teletext.MINUS_BAR_OFFSET + teletext.MINUS_BAR_WIDTH], b' ' * 15)
-
-    def test_indicator_counts_overflow(self):
-        added = [teletext.Change(f'OH{i}AAA', 'VOIMASSA', '2026-06-05', 'NOW', 'f') for i in range(16)]
-        removed = [teletext.Change(f'OH{i}AAA', 'VOIMASSA', '2026-06-05', '2026-06-06', 't') for i in range(16)]
-        added_content = teletext.render_ep1(added, date(2026, 6, 5), '10/11')
-        removed_content = teletext.render_ep1(removed, date(2026, 6, 5), '10/11')
-        self.assertEqual(added_content[teletext.PLUS_BAR_OFFSET:teletext.PLUS_BAR_OFFSET + teletext.PLUS_BAR_WIDTH], b'\x7f' * 14 + b'>')
-        self.assertEqual(removed_content[teletext.MINUS_BAR_OFFSET:teletext.MINUS_BAR_OFFSET + teletext.MINUS_BAR_WIDTH], b'\x7f' * 14 + b'>')
-
-    def test_indicator_counts_ignore_non_active_rows(self):
-        changes = [
-            teletext.Change('OH1AAA', 'KARENSSI', '2026-06-05', 'NOW', 'f'),
-            teletext.Change('OH2AAA', 'VARAUS', '2026-06-05', '2026-06-06', 't'),
-        ]
-        content = teletext.render_ep1(changes, date(2026, 6, 5), '10/11')
-        self.assertEqual(content[teletext.PLUS_BAR_OFFSET:teletext.PLUS_BAR_OFFSET + teletext.PLUS_BAR_WIDTH], b' ' * 15)
-        self.assertEqual(content[teletext.MINUS_BAR_OFFSET:teletext.MINUS_BAR_OFFSET + teletext.MINUS_BAR_WIDTH], b' ' * 15)
+    def test_active_count_must_fit_header_field(self):
+        with self.assertRaises(ValueError):
+            teletext.render_ep1([], date(2026, 6, 5), '10/11', 10000000)
 
     def test_formats_dates_for_teletext(self):
         self.assertEqual(teletext.format_date('2026-06-05'), '05.06.2026')
@@ -129,7 +118,7 @@ class TeletextExportTest(unittest.TestCase):
         path = create_long_callsign_database()
         try:
             rows = teletext.fetch_changes(path, date(2020, 4, 3))
-            content = teletext.render_ep1(rows, date(2020, 4, 3), '10/11')
+            content = teletext.render_ep1(rows, date(2020, 4, 3), '10/11', 16)
         finally:
             path.unlink()
         self.assertEqual(len(rows), teletext.ENTRY_COUNT)
@@ -185,6 +174,42 @@ def create_long_callsign_database() -> Path:
         ('OH7PYSYKOTONA', 'VOIMASSA', '2020-04-03', '2020-07-20'),
     ]
     return create_database(changes)
+
+
+def create_active_count_database() -> Path:
+    path = Path('/tmp/koolitutka-teletext-active-count-test.sqlite')
+    if path.exists():
+        path.unlink()
+    db = sqlite3.connect(path)
+    try:
+        db.executescript(
+            '''
+            CREATE TABLE event (
+                callsign TEXT,
+                neighbour TEXT,
+                is_wildcard INTEGER,
+                status TEXT,
+                from_date TEXT,
+                to_date TEXT
+            );
+            '''
+        )
+        db.executemany(
+            'INSERT INTO event VALUES (?, ?, ?, ?, ?, ?)',
+            [
+                ('OH1AAA', 'OH*AAA', 0, 'VOIMASSA', None, 'NOW'),
+                ('OH2AAA', 'OH*AAA', 0, 'VOIMASSA', '2026-06-04', 'NOW'),
+                ('OH3AAA', 'OH*AAA', 0, 'VOIMASSA', '2026-06-06', 'NOW'),
+                ('OH4AAA', 'OH*AAA', 0, 'VOIMASSA', '2026-06-01', '2026-06-05'),
+                ('OH5AAA', 'OH*AAA', 0, 'VOIMASSA', '2026-06-01', '2026-06-06'),
+                ('OH*AAA', 'OH*AAA', 1, 'VOIMASSA', '2026-06-01', 'NOW'),
+                ('OH6AAA', 'OH*AAA', 0, 'KARENSSI', '2026-06-01', 'NOW'),
+            ],
+        )
+        db.commit()
+    finally:
+        db.close()
+    return path
 
 
 def create_database(changes) -> Path:

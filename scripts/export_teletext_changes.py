@@ -13,11 +13,9 @@ TABLE_OFFSET = 246
 ENTRY_WIDTH = 40
 ENTRY_COUNT = 16
 SUBPAGE_OFFSET = 81
-SHORT_DATE_OFFSET = 121
-PLUS_BAR_OFFSET = 65
-PLUS_BAR_WIDTH = 15
-MINUS_BAR_OFFSET = 105
-MINUS_BAR_WIDTH = 15
+ACTIVE_COUNT_OFFSET = 64
+ACTIVE_COUNT_WIDTH = 16
+ACTIVE_COUNT_NUMBER_WIDTH = 6
 
 TT_RED = b'\x01'
 TT_GREEN = b'\x02'
@@ -33,7 +31,6 @@ TT_DOUBLE_HEIGHT = b'\x0d'
 TT_CONCEAL = b'\x18'
 TT_BLACK_BACKGROUND = b'\x1c'
 TT_NEW_BACKGROUND = b'\x1d'
-TT_DELETE = b'\x7f'
 
 HELSINKI = ZoneInfo('Europe/Helsinki')
 
@@ -66,7 +63,8 @@ def main() -> None:
     args = parse_args()
     export_date = args.date or today_helsinki()
     changes = fetch_changes(args.database, export_date)
-    content = render_ep1(changes, export_date, args.subpage)
+    active_count = fetch_active_count(args.database, export_date)
+    content = render_ep1(changes, export_date, args.subpage, active_count)
     write_bytes(args.output, content)
 
 
@@ -124,13 +122,31 @@ def fetch_changes(database: Path, export_date: date) -> list[Change]:
         connection.close()
 
 
-def render_ep1(changes: list[Change], export_date: date, subpage: str) -> bytes:
+def fetch_active_count(database: Path, export_date: date) -> int:
+    connection = sqlite3.connect(database)
+    try:
+        row = connection.execute(
+            '''
+            SELECT count(*)
+              FROM event
+             WHERE status = 'VOIMASSA'
+               AND is_wildcard = 0
+               AND (from_date IS NULL OR from_date <= ?)
+               AND (to_date = 'NOW' OR to_date > ?)
+            ''',
+            (export_date.isoformat(), export_date.isoformat()),
+        ).fetchone()
+        return int(row[0])
+    finally:
+        connection.close()
+
+
+def render_ep1(changes: list[Change], export_date: date, subpage: str, active_count: int) -> bytes:
     visible_changes = changes[:ENTRY_COUNT]
     page = bytearray(b' ' * EP1_SIZE)
     write_static_frame(page)
-    write_indicators(page, visible_changes)
+    write_active_count(page, active_count)
     write_at(page, SUBPAGE_OFFSET, encode_text(subpage))
-    write_at(page, SHORT_DATE_OFFSET, export_date.strftime('%d.%m').encode('ascii'))
 
     table = b''.join(render_change(change) for change in visible_changes)
     table += b' ' * (ENTRY_WIDTH * ENTRY_COUNT - len(table))
@@ -152,12 +168,10 @@ def write_static_frame(page: bytearray) -> None:
         + b' '
         + TT_GREEN
         + TT_BLACK_BACKGROUND
-        + b'+'
     )
     write_at(page, 80, TT_WHITE)
     write_at(page, 87, TT_NEW_BACKGROUND)
-    write_at(page, 102, TT_RED + TT_BLACK_BACKGROUND + b'-')
-    write_at(page, 120, TT_CYAN)
+    write_at(page, 103, TT_BLACK_BACKGROUND)
     write_at(page, 126, TT_BLUE + TT_NEW_BACKGROUND + TT_WHITE + encode_text(' Muutokset radioamatöörikutsuissa    ') + TT_MAGENTA)
     write_at(page, 168, TT_CONCEAL + TT_FLASH + encode_text('Onnea uusille radioamatööreille!') + TT_STEADY + TT_BLACK_BACKGROUND + b'  ' + TT_YELLOW + b'Kut')
     write_at(page, 210, encode_text('su     Tila Alkanut     Päättynyt   '))
@@ -166,17 +180,12 @@ def write_static_frame(page: bytearray) -> None:
     page[-2:] = b'\x00\x00'
 
 
-def write_indicators(page: bytearray, changes: list[Change]) -> None:
-    added = sum(1 for change in changes if change.status == 'VOIMASSA' and change.bold == 'f')
-    removed = sum(1 for change in changes if change.status == 'VOIMASSA' and change.bold == 't')
-    write_at(page, PLUS_BAR_OFFSET, indicator_bar(added, PLUS_BAR_WIDTH))
-    write_at(page, MINUS_BAR_OFFSET, indicator_bar(removed, MINUS_BAR_WIDTH))
-
-
-def indicator_bar(count: int, width: int) -> bytes:
-    if count <= width:
-        return (TT_DELETE * count).ljust(width, b' ')
-    return TT_DELETE * (width - 1) + b'>'
+def write_active_count(page: bytearray, active_count: int) -> None:
+    text = f'{active_count:>{ACTIVE_COUNT_NUMBER_WIDTH}} voimassa'
+    encoded = encode_text(text)
+    if len(encoded) > ACTIVE_COUNT_WIDTH:
+        raise ValueError(f'active count value {text!r} does not fit in {ACTIVE_COUNT_WIDTH} bytes')
+    write_at(page, ACTIVE_COUNT_OFFSET, encoded.ljust(ACTIVE_COUNT_WIDTH, b' '))
 
 
 def render_change(change: Change) -> bytes:
