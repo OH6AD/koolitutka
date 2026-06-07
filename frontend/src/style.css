@@ -76,7 +76,7 @@ p { margin: 0; }
   color: inherit;
 }
 
-.search-panel, article, .changes-panel {
+.search-panel, article, .changes-panel, .privacy-panel {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -106,6 +106,18 @@ button {
   color: #fff;
 }
 .secondary-button { background: #e8edf2; color: #354250; }
+.link-button {
+  display: inline;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
 
 .suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 0; }
 .suggestions button { background: #e8f1f5; color: #164c66; }
@@ -155,6 +167,9 @@ th { color: var(--muted); font-weight: 600; }
 .notice.error { background: #fae8ea; color: #842334; }
 .footer { margin-top: 28px; color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
 .footer a { color: var(--accent); font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.privacy-panel { margin-top: 14px; color: var(--muted); line-height: 1.55; }
+.privacy-panel p + p { margin-top: 10px; }
+.privacy-panel a { color: var(--accent); font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 
 @media (max-width: 512px) {
   .topbar, .section-header { display: grid; }

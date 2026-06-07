@@ -38,6 +38,15 @@ const translations = {
     noHistoryNotice: 'Tällä kutsulla ei ole tunnettua historiaa. Se voi olla vapaa tai virheellinen. Tarkista kelpoisuussäännöt ennen sen hakemista.',
     validityRules: 'Kelpoisuussäännöt',
     footer: 'Koolitutkan tekijä on {author}. Lähdekoodi on {source}issa, data on peräisin projektista {dataSource}. Ideoita ovat antaneet OH2LAK Erik ja OH3HZB Lasse.',
+    privacyLabel: 'Tietosuoja',
+    privacyTitle: 'Tietosuoja',
+    privacyAuthorLink: 'tekijään',
+    privacyText: [
+      'Koolitutka ei tunnista käyttäjiä, ei käytä evästeitä eikä sisällä analytiikkaa. Sovellus on täysin selainpohjainen eikä hakuja lähetetä palvelimelle.',
+      'Selaimeen tallennetaan vain käyttöliittymän asetuksia, kuten valittu kieli ja hakutapa. Ne tallennetaan selaimen paikalliseen tallennustilaan tällä laitteella.',
+      'Kutsumerkkidata on peräisin OH6AD:n {dataSource}-projektista, joka pohjautuu Traficomin julkaisemaan kutsumerkkidataan. Sivulla näytetään kutsumerkkejä, tiloja ja historiatietoja; nimiä, yhteystietoja tai haltijan muita tietoja ei ole mukana.',
+      'Kutsumerkki saattaa silti olla henkilötieto, jos se yhdistetään muualla olevaan tietoon. Jos sinulla on kysymyksiä tietosuojaan liittyen, ota yhteyttä {author}.',
+    ],
     statusText: {
       VOIMASSA: 'Voimassaolo',
       VARAUS: 'Varaus',
@@ -92,6 +101,15 @@ const translations = {
     noHistoryNotice: 'Den här anropssignalen har ingen känd historik. Den kan vara ledig eller ogiltig. Kontrollera giltighetsreglerna innan du ansöker om den.',
     validityRules: 'Giltighetsregler',
     footer: 'Koolitutka är gjord av {author}. Källkoden finns på {source}, och data kommer från projektet {dataSource}. Idéer har kommit från OH2LAK Erik och OH3HZB Lasse.',
+    privacyLabel: 'Dataskydd',
+    privacyTitle: 'Dataskydd',
+    privacyAuthorLink: 'upphovsmannen',
+    privacyText: [
+      'Koolitutka identifierar inte användare, använder inte kakor och innehåller ingen analys. Applikationen körs helt i webbläsaren och sökningar skickas inte till servern.',
+      'Endast inställningar för användargränssnittet, som valt språk och sökläge, sparas i webbläsarens lokala lagring på den här enheten.',
+      'Anropssignalsdata kommer från OH6AD:s {dataSource}-projekt, som bygger på anropssignalsdata publicerad av Traficom. Sidan visar anropssignaler, status och historik; namn, kontaktuppgifter eller sökandes egna uppgifter ingår inte.',
+      'En anropssignal kan ändå vara en personuppgift om den kombineras med information från annat håll. Om du har frågor om dataskydd, kontakta {author}.',
+    ],
     statusText: {
       VOIMASSA: 'Giltighet',
       VARAUS: 'Reservering',
@@ -146,6 +164,15 @@ const translations = {
     noHistoryNotice: 'This callsign has no known history. It may be available, or it may be invalid. Check the validity rules before applying for it.',
     validityRules: 'Validity rules',
     footer: 'Koolitutka is by {author}. Source code is available at {source}, and data comes from {dataSource}. Ideas came from OH2LAK Erik and OH3HZB Lasse.',
+    privacyLabel: 'Privacy',
+    privacyTitle: 'Privacy',
+    privacyAuthorLink: 'the author',
+    privacyText: [
+      'Koolitutka does not identify users, use cookies, or include analytics. The application runs fully in the browser, and searches are not sent to the server.',
+      'Only user interface preferences, such as the selected language and search mode, are stored in this browser on this device.',
+      'Callsign data comes from OH6AD’s {dataSource} project, which is based on callsign data published by Traficom. The site shows callsigns, states, and history; names, contact details, and applicants’ own information are not included.',
+      'A callsign may still be personal data if it is combined with information from elsewhere. If you have privacy-related questions, contact {author}.',
+    ],
     statusText: {
       VOIMASSA: 'Validity',
       VARAUS: 'Reservation',
@@ -200,6 +227,15 @@ const translations = {
     noHistoryNotice: 'Für dieses Rufzeichen ist keine Historie bekannt. Es kann verfügbar oder ungültig sein. Prüfe die Gültigkeitsregeln, bevor du es beantragst.',
     validityRules: 'Gültigkeitsregeln',
     footer: 'Koolitutka ist von {author}. Der Quellcode ist unter {source} verfügbar, und die Daten stammen aus dem Projekt {dataSource}. Ideen kamen von OH2LAK Erik und OH3HZB Lasse.',
+    privacyLabel: 'Datenschutz',
+    privacyTitle: 'Datenschutz',
+    privacyAuthorLink: 'den Autor',
+    privacyText: [
+      'Koolitutka identifiziert keine Nutzer, verwendet keine Cookies und enthält keine Analysefunktionen. Die Anwendung läuft vollständig im Browser, und Suchanfragen werden nicht an den Server gesendet.',
+      'Nur Einstellungen der Benutzeroberfläche, wie die gewählte Sprache und der Suchmodus, werden lokal in diesem Browser auf diesem Gerät gespeichert.',
+      'Die Rufzeichendaten stammen aus dem {dataSource}-Projekt von OH6AD, das auf von Traficom veröffentlichten Rufzeichendaten basiert. Die Seite zeigt Rufzeichen, Status und Historie; Namen, Kontaktdaten oder eigene Angaben der Antragsteller sind nicht enthalten.',
+      'Ein Rufzeichen kann trotzdem personenbezogene Daten darstellen, wenn es mit Informationen aus anderen Quellen kombiniert wird. Wenn du Fragen zum Datenschutz hast, wende dich an {author}.',
+    ],
     statusText: {
       VOIMASSA: 'Gültigkeit',
       VARAUS: 'Reservierung',

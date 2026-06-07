@@ -28,6 +28,7 @@ let prefixSearchOnly = parsePrefixSearchOnly(localStorage.getItem(PREFIX_SEARCH_
 let metadata: Metadata | null = null;
 let lastLookup: LookupResult | null = null;
 let changes: ChangeRow[] = [];
+let showPrivacy = false;
 let isLoading = true;
 let error: string | null = null;
 
@@ -105,6 +106,7 @@ function render(): void {
       </section>
 
       ${renderFooter()}
+      ${showPrivacy ? renderPrivacyPanel() : ''}
     </main>
   `;
   bindEvents();
@@ -113,10 +115,26 @@ function render(): void {
 function renderFooter(): string {
   const t = messages(language);
   return `<footer class="footer">${formatMessage(t.footer, {
-    author: `<a href="${AUTHOR_URL}">OH64K</a>`,
+    author: `<a href="${AUTHOR_URL}">OH64K Joel</a>`,
     source: `<a href="${SOURCE_URL}">GitHub</a>`,
     dataSource: `<a href="${DATA_SOURCE_URL}">koolit</a>`,
-  })}</footer>`;
+  })} <button id="privacy-open" class="link-button" type="button">${t.privacyLabel}</button>.</footer>`;
+}
+
+function renderPrivacyPanel(): string {
+  const t = messages(language);
+  return `
+    <section class="privacy-panel" aria-labelledby="privacy-title">
+      <div class="card-header">
+        <h2 id="privacy-title">${t.privacyTitle}</h2>
+        <button id="privacy-close" class="icon-button" type="button" aria-label="${t.close}" title="${t.close}">×</button>
+      </div>
+      ${t.privacyText.map((paragraph) => `<p>${formatMessage(paragraph, {
+        author: `<a href="${AUTHOR_URL}">${t.privacyAuthorLink}</a>`,
+        dataSource: `<a href="${DATA_SOURCE_URL}">koolit</a>`,
+      })}</p>`).join('')}
+    </section>
+  `;
 }
 
 function bindEvents(): void {
@@ -184,6 +202,17 @@ function bindEvents(): void {
     const input = document.querySelector<HTMLInputElement>('#callsign');
     if (input) input.value = '';
     syncRoute();
+    render();
+  });
+
+  document.querySelector<HTMLButtonElement>('#privacy-open')?.addEventListener('click', () => {
+    showPrivacy = true;
+    render();
+    document.querySelector<HTMLElement>('#privacy-title')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  });
+
+  document.querySelector<HTMLButtonElement>('#privacy-close')?.addEventListener('click', () => {
+    showPrivacy = false;
     render();
   });
 }
