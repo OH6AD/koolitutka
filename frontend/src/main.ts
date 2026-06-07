@@ -117,8 +117,7 @@ function renderFooter(): string {
   return `<footer class="footer">${formatMessage(t.footer, {
     author: `<a href="${AUTHOR_URL}">OH64K Joel</a>`,
     source: `<a href="${SOURCE_URL}">GitHub</a>`,
-    dataSource: `<a href="${DATA_SOURCE_URL}">koolit</a>`,
-  })} <button id="privacy-open" class="link-button" type="button">${t.privacyLabel}</button>.</footer>`;
+  })} <button id="privacy-open" class="link-button" type="button">${t.privacyTitle}</button>.</footer>`;
 }
 
 function renderPrivacyPanel(): string {
