@@ -176,7 +176,7 @@ def write_static_frame(page: bytearray) -> None:
     write_at(page, 168, TT_CONCEAL + TT_FLASH + encode_text('Onnea uusille radioamatööreille!') + TT_STEADY + TT_BLACK_BACKGROUND + b'  ' + TT_YELLOW + b'Kut')
     write_at(page, 210, encode_text('su     Tila Alkanut     Päättynyt   '))
     write_at(page, 886, TT_YELLOW + encode_text('Lyhenteet: VOImassa KARenssi VARaus  '))
-    write_at(page, 924, b'  ' + TT_YELLOW + encode_text('Katso lisää: net.pupu.li/koolitutka/   '))
+    write_at(page, 924, b'  ' + TT_YELLOW + encode_text('Katso lisää: koolit.hamit.fi         '))
     page[-2:] = b'\x00\x00'
 
 

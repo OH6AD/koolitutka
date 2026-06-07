@@ -69,7 +69,7 @@ scripts/export_teletext_changes.py db.sqlite teletext-590-03.ep1 --subpage 10/11
 ```
 
 The output is 24 records of 42 bytes, uses ISO-646-FI character mapping, and
-includes `net.pupu.li/koolitutka/` near the bottom of the page. If `--date` is
+includes `koolit.hamit.fi` near the bottom of the page. If `--date` is
 not given, the exporter uses the current date in Europe/Helsinki.
 
 ## Callsign difference tool

@@ -63,7 +63,7 @@ For production deployments, set the canonical site URL so social link previews
 can use absolute Open Graph image and page URLs:
 
 ```sh
-VITE_SITE_URL=https://example.fi/koolitutka/ npm run build
+VITE_SITE_URL=https://koolit.hamit.fi/ npm run build
 ```
 
 The built frontend uses relative paths, so `public/` can be served from a domain
