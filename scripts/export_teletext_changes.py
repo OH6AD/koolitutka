@@ -200,7 +200,7 @@ def render_change(change: Change) -> bytes:
         + from_control
         + field(format_from_date(change.from_date), 11)
         + to_control
-        + field(format_to_date(change.to_date), 12)
+        + field(format_to_date(change), 12)
     )
     if len(entry) != ENTRY_WIDTH:
         raise ValueError(f'EP1 entry is {len(entry)} bytes, expected {ENTRY_WIDTH}')
@@ -241,10 +241,21 @@ def format_from_date(value: str | None) -> str:
     return format_date(value)
 
 
-def format_to_date(value: str) -> str:
-    if value == 'NOW':
+def format_to_date(change: Change) -> str:
+    if change.status == 'KARENSSI' and change.to_date == 'NOW' and change.from_date is not None:
+        return format_estimated_end_date(change.from_date)
+    if change.to_date == 'NOW':
         return '-'
-    return format_date(value)
+    return format_date(change.to_date)
+
+
+def format_estimated_end_date(value: str) -> str:
+    start = date.fromisoformat(value)
+    try:
+        estimated = start.replace(year=start.year + 2)
+    except ValueError:
+        estimated = start.replace(year=start.year + 2, day=28)
+    return estimated.strftime('%d.%m.%Y?')
 
 
 def format_date(value: str) -> str:

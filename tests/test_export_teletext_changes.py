@@ -91,7 +91,23 @@ class TeletextExportTest(unittest.TestCase):
     def test_formats_dates_for_teletext(self):
         self.assertEqual(teletext.format_date('2026-06-05'), '05.06.2026')
         self.assertEqual(teletext.format_from_date(None), '   <= 2016')
-        self.assertEqual(teletext.format_to_date('NOW'), '-')
+        self.assertEqual(teletext.format_to_date(teletext.Change('OH1ABC', 'VOIMASSA', '2026-06-05', 'NOW', 'f')), '-')
+
+    def test_formats_estimated_cooldown_end_date(self):
+        cooldown = teletext.Change('OH1ABC', 'KARENSSI', '2026-06-05', 'NOW', 'f')
+        ended_cooldown = teletext.Change('OH1ABC', 'KARENSSI', '2026-06-05', '2026-06-06', 't')
+        unknown_start = teletext.Change('OH1ABC', 'KARENSSI', None, 'NOW', 'f')
+        leap_day = teletext.Change('OH1ABC', 'KARENSSI', '2024-02-29', 'NOW', 'f')
+
+        self.assertEqual(teletext.format_to_date(cooldown), '05.06.2028?')
+        self.assertEqual(teletext.format_to_date(ended_cooldown), '06.06.2026')
+        self.assertEqual(teletext.format_to_date(unknown_start), '-')
+        self.assertEqual(teletext.format_to_date(leap_day), '28.02.2026?')
+
+    def test_renders_estimated_cooldown_end_date_marker(self):
+        entry = teletext.render_change(teletext.Change('OH1ABC', 'KARENSSI', '2026-06-05', 'NOW', 'f'))
+        self.assertEqual(len(entry), teletext.ENTRY_WIDTH)
+        self.assertEqual(entry[28:40], b'05.06.2028? ')
 
     def test_converts_finnish_characters_to_iso_646_fi(self):
         self.assertEqual(teletext.encode_text('Ää Öö Åå'), b'[{ \\| ]}')
